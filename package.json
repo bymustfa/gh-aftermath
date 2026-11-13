@@ -48,7 +48,7 @@
     "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^9.39.1",
     "@types/node": "^22.19.1",
-    "eslint": "^9.39.1",
+    "eslint": "^10.14.0",
     "nock": "^14.0.10",
     "playwright": "^1.56.1",
     "tsx": "^4.20.6",
