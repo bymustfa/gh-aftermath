@@ -19,11 +19,32 @@ const HELP = `gh-aftermath
 
 Self-hosted recovery UI for the mess left after a GitHub incident.
 
+The npm package is not published yet. Run it from a checkout:
+
+  git clone https://github.com/bymustfa/gh-aftermath.git
+  cd gh-aftermath
+  npm ci
+  npm run build
+  npm start
+  npm start -- --demo
+
+Docker:
+
+  docker build -t gh-aftermath .
+  docker run --rm -p 8787:8787 gh-aftermath --demo
+  docker run --rm -p 8787:8787 -e GITHUB_TOKEN -e GITHUB_ORG=your-org gh-aftermath
+
+Coming soon, after the package is published:
+
+  npx gh-aftermath --demo
+
 Usage
   gh-aftermath [--demo] [--org ORG] [--host HOST] [--port PORT]
 
 Environment
-  GITHUB_TOKEN                 Personal access token for org, repo, and Actions APIs
+  GITHUB_TOKEN                 Personal access token for org, repo, and Actions APIs.
+                               If unset, the server still starts and the page asks for one.
+                               That token stays in server memory only and is not written to disk.
   GITHUB_ORG                   Organization shown in the form
   GITHUB_APP_ID                GitHub App id, for app webhook deliveries
   GITHUB_APP_PRIVATE_KEY       App private key (PEM, or with escaped newlines)
@@ -38,6 +59,11 @@ Environment
 
 export function helpText(): string {
   return HELP;
+}
+
+export function hasLiveCredentials(config: Pick<AppConfig, "token" | "appId" | "privateKey" | "installationId">): boolean {
+  if (config.token) return true;
+  return Boolean(config.appId && config.privateKey && config.installationId);
 }
 
 function normalizeKey(value: string): string {

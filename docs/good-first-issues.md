@@ -22,7 +22,7 @@ When a row is expanded, call the single-delivery endpoint (`GET /repos/{owner}/{
 
 ## Remember the last window in the browser
 
-People reopen the tool the next morning with the same incident window. The form starts empty in live mode (demo mode pre-fills November 9).
+People reopen the tool the next morning with the same incident window. The form starts empty in live mode (demo mode pre-fills the November 9 webhook window, 09:23–11:40 UTC).
 
 Store the organization, the UTC window, the two thresholds, and the dry-run checkbox in `localStorage`. Restore them on load. Add a "Forget this window" control that clears the saved values. Do not store anything returned by the API, and do not store a token. The server still treats dry-run as the default when the checkbox is absent.
 

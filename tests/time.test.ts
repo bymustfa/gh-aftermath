@@ -35,6 +35,7 @@ describe("time window", () => {
     expect(isWithinWindow("2026-11-09T13:59:59.999Z", parsed)).toBe(false);
     expect(isWithinWindow("2026-11-09T18:30:00.001Z", parsed)).toBe(false);
     expect(isWithinWindow(null, parsed)).toBe(false);
+    expect(isWithinWindow("not-a-timestamp", parsed)).toBe(false);
   });
 
   it("rejects an inverted window", () => {
@@ -47,7 +48,13 @@ describe("time window", () => {
       window,
     );
     expect(split.stop).toBe(true);
-    expect(split.keep.map((delivery) => delivery.id)).toEqual([2, 3]);
+    expect(split.keep.map((delivery) => delivery.id)).toEqual([2]);
+  });
+
+  it("drops deliveries that have no usable timestamp", () => {
+    const split = splitDeliveryPage([row(1, null), row(2, "not-a-timestamp"), row(3, "2026-11-09T15:00:00.000Z")], window);
+    expect(split.stop).toBe(false);
+    expect(split.keep.map((delivery) => delivery.id)).toEqual([3]);
   });
 
   it("keeps paging when every row is still newer than the window", () => {

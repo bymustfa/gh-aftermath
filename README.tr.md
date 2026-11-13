@@ -1,48 +1,68 @@
 # gh-aftermath
 
-[English](README.md)
+[English](README.md) | [Türkçe](README.tr.md)
 
 [![CI](https://github.com/bymustfa/gh-aftermath/actions/workflows/ci.yml/badge.svg)](https://github.com/bymustfa/gh-aftermath/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/bymustfa/gh-aftermath/actions/workflows/codeql.yml/badge.svg)](https://github.com/bymustfa/gh-aftermath/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://github.com/bymustfa/gh-aftermath/actions/workflows/scorecard.yml/badge.svg)](https://github.com/bymustfa/gh-aftermath/actions/workflows/scorecard.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![npm](https://img.shields.io/npm/v/gh-aftermath.svg)](https://www.npmjs.com/package/gh-aftermath)
+[![npm](https://img.shields.io/badge/npm-not%20yet%20published-lightgrey)](#hizli-baslangic)
 
-GitHub kesintisinden sonra ortalığı toplamak için kendi sunucunuzda çalışan bir web arayüzü. Kesinti aralığını seçersiniz. Araç, kuruluştaki depo webhook'larını, kuruluş webhook'larını ve GitHub App teslimatlarını tarar; başarısız veya yanıtsız kalan teslimatları listeler. Aynı aralıkta kuyrukta kalmış ya da fazla uzun süredir çalışan Actions işlerini de gösterir. Yeniden teslim, iptal, zorla iptal ve yeniden çalıştırma aynı ekrandan yapılır.
+GitHub kesintisinden sonra kuruluşu toparlamak için kendi sunucunuzda çalışan bir web arayüzü: başarısız webhook teslimatlarını yeniden oynatır, hâlâ takılı Actions işlerini temizler.
 
-Deneme çalıştırma (dry-run) varsayılan olarak açıktır. Ekranda GitHub'a gidecek `POST` isteğinin tam yolu görünür. Planlanan veya yapılan işlerin JSON ve Markdown raporu indirilebilir.
+## Sorun
 
-npm rozeti yer tutucudur. 0.1.0 yayımlanmadı, `package.json` private işaretli, ve yayın akışı npm'e paket basmaz, GitHub Release de oluşturmaz.
+Actions ya da webhook'lar bozulunca geride iki tür iş kalır. Webhook teslimatları başarısız olur ya da hiç yanıt alamaz. İş akışı çalıştırmaları `queued` durumunda bekler, ya da bitmesi gerekirken uzun süre `in_progress` kalır. Bunları depo depo elle yeniden oynatmak, kısa bir kesintiyi uzun bir öğleden sonraya çevirir.
 
-![Örnek 9 Kasım kesintisinin taraması: başarısız teslimatlar ve takılı işler](docs/screenshot.png)
+9 Kasım 2026'da GitHub iki ayrı olay bildirdi. 09:23 ile 11:40 UTC arasında bozulan bir iş kuyruğu kümesi, webhook teslimatlarını ve Actions iş akışı çalıştırmalarını geciktirdi ([Incident with Webhooks and Actions](https://www.githubstatus.com/incidents/xxb3l2bm76dr)). 18:07 ile 18:59 UTC arasında Actions performansı düştü: bazı iş akışı çalıştırmaları başlamadı, güncellenmedi ya da durumu doğru bildiremedi; Webhooks ikincil olarak etkilendi ([Incident with Actions and Checks API](https://www.githubstatus.com/incidents/tp8cghg7tlc4)).
 
-![Dry-run raporu: yeniden teslim ve iptal istekleri](docs/screenshot-report.png)
+[Hacker News](https://news.ycombinator.com/item?id=50458532) üzerindeki daha sonraki bir başlık, 11 Kasım 2026 olayını tartışır: [Impact across multiple GitHub products including Actions, Pages, and Copilot products](https://www.githubstatus.com/incidents/dvy0t3mvh1lg). GitHub bu olayı 20:48 UTC'de açtı ve 21:21 UTC'de çözüldü olarak kapattı. gh-aftermath bu tür bir temizlik için yerel bir araçtır. Bir durum sayfası değildir ve GitHub adına konuşmaz.
 
-![Demo: aralık seçimi, dry-run, yeniden teslim ve zorla iptal, sonra rapor](docs/demo.gif)
+## Özellikler
 
-## Neden
+- Kuruluş genelinde, UTC zaman aralığına göre tarama
+- Depo kancaları, kuruluş kancaları ve GitHub App teslimatları için toplu webhook yeniden teslimi
+- Kuyrukta ya da sürmekte olan Actions işleri için iptal, zorla iptal ve yeniden çalıştırma
+- Teslimat ve iş listelerinde arama ve süzgeçler
+- Varsayılan olarak dry-run: bir şey gönderilmeden önce isteğin tam yolu görünür
+- İndirilebilir JSON ve Markdown raporları
+- Belirteç olmadan ekranı gezmek için örnek verili demo modu
 
-9 Kasım Actions ve webhook kesintisinden sonra derlemeler kuyrukta kaldı, webhook'lar elle yeniden oynatıldı, bazı işler iptal edilemedi. GitHub'ın kendi örneği tek depo için bir betik. `webhook-redeliver-action` tek depoyu Actions içinden oynatır. VS Code webhook araçları tek kancayı yönetir. Hookdeck ücretli bir webhook platformu.
+## Demo
 
-gh-aftermath kuruluş genelinde ve zaman aralığına göre çalışır: webhook'lar ve takılı işler birlikte, kendi makinenizde çalışan bir arayüzde, saklayabileceğiniz bir raporla.
+![Demo: aralık seçimi, dry-run yeniden teslim, sonra rapor](docs/demo.gif)
 
-## Kurulum
+![Tarama sonucu: başarısız teslimatlar ve takılı işler](docs/after-results-light.png)
 
-Node 20 veya daha yenisi.
+![Dry-run raporu](docs/after-report-light.png)
+
+## Hızlı başlangıç
+
+Node.js 20 veya daha yenisi. Paket henüz npm'de yok.
 
 ```bash
-npx gh-aftermath --demo
-```
-
-`npx gh-aftermath` paket yayımlandıktan sonra çalışır. O zamana kadar kaynaktan veya konteynerden çalıştırın:
-
-```bash
-npm install
+git clone https://github.com/bymustfa/gh-aftermath.git
+cd gh-aftermath
+npm ci
 npm run build
+npm start -- --demo
+```
+
+http://localhost:8787 adresini açın. Demo modu örnek kuruluş `northwind` kullanır ve GitHub'ı çağırmaz.
+
+Canlı mod aynı sunucudur, `--demo` olmadan. `GITHUB_TOKEN` ve `GITHUB_ORG` verin, ya da belirteç olmadan başlatıp sayfadaki alana yapıştırın. Sayfadan girilen belirteç yalnızca o sunucu sürecinin belleğinde durur.
+
+```bash
+npm start
+```
+
+`npx` yakında, paket yayımlandıktan sonra:
+
+```bash
 npx gh-aftermath --demo
 ```
 
-Docker:
+Docker imajı yayımlanmadı. Yerelde derleyin:
 
 ```bash
 docker build -t gh-aftermath .
@@ -50,97 +70,54 @@ docker run --rm -p 8787:8787 gh-aftermath --demo
 docker run --rm -p 8787:8787 -e GITHUB_TOKEN -e GITHUB_ORG=kurulusunuz gh-aftermath
 ```
 
-http://localhost:8787 adresini açın.
-
-## Kullanım
-
-1. Kuruluşu ve UTC aralığını girin. Demo modu 9 Kasım örnek kesintisiyle açılır.
-2. **Dry run** işaretliyken tarayın.
-3. Teslimatları ve işleri seçin. Yeniden teslim, iptal, zorla iptal veya yeniden çalıştırın. Rapor her `POST` yolunu yazar.
-4. Dry-run'ı kapatıp aynı işlemleri GitHub'a göndermek için tekrarlayın.
-5. Raporu Markdown veya JSON olarak indirin.
-
-```bash
-gh-aftermath --help
-gh-aftermath --demo --port 8787 --org northwind
-```
-
 | Değişken | Amaç |
 | --- | --- |
-| `GITHUB_TOKEN` | Kuruluş taraması, yeniden teslim ve Actions için PAT |
+| `GITHUB_TOKEN` | Tarama, yeniden teslim ve Actions için kişisel erişim belirteci |
 | `GITHUB_ORG` | Formda görünen kuruluş |
-| `GITHUB_APP_ID` | `/app/hook` teslimatları için uygulama kimliği |
+| `GITHUB_APP_ID` | App kancası teslimatları için uygulama kimliği |
 | `GITHUB_APP_PRIVATE_KEY` veya `GITHUB_APP_PRIVATE_KEY_PATH` | Uygulama özel anahtarı |
-| `GITHUB_APP_INSTALLATION_ID` | PAT yerine uygulama ile tarama |
+| `GITHUB_APP_INSTALLATION_ID` | Belirteç yerine uygulama ile tarama |
 | `PORT` / `HOST` | Varsayılan `8787` ve `0.0.0.0` |
 | `DEMO=1` | `--demo` ile aynı |
-| `CONCURRENCY` | Eşzamanlı GitHub çağrısı. Varsayılan 4 |
-| `MAX_PAGES` | Her listeden okunan 100'lük sayfa sayısı. Varsayılan 20 |
-
-Belirteç yalnızca sunucuda okunur. Sayfada belirteç alanı yoktur ve raporlara yazılmaz.
-
-### Neler işaretlenir
-
-- Durum kodu 400 veya daha yüksekse teslimat başarısızdır. Kod `0` veya boşsa yanıt yok sayılır. GitHub durumu `OK` / `success` değilse de başarısızdır.
-- Teslimatlar yeniden eskiye okunur. Sayfa, aralığın başlangıcından eskiye düşünce sayfalama durur.
-- Bir iş `queued`, `waiting`, `pending` veya `requested` ise, aralıkta oluşturulduysa ve kuyruk eşiğinden eskiyse (varsayılan 10 dakika) takılı sayılır.
-- Bir iş `in_progress` ise, aralıkta başladıysa ve eşikten uzun sürdüyse (varsayılan 60 dakika) takılı sayılır.
-- Bitmiş işler listelenmez. GitHub yalnızca güncel durumu döner.
-
-Yeniden teslim resmi uçları kullanır:
-
-- `POST /repos/{owner}/{repo}/hooks/{hook_id}/deliveries/{delivery_id}/attempts`
-- `POST /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}/attempts`
-- `POST /app/hook/deliveries/{delivery_id}/attempts`
-
-Takılı işler `POST /repos/{owner}/{repo}/actions/runs/{run_id}/cancel`, `.../force-cancel` ve `.../rerun` kullanır.
-
-Octokit, retry ve throttling eklentileriyle kurulur. Birincil ve ikincil hız sınırları üç denemeye kadar yeniden denenir.
 
 ## Belirteç yetkileri
 
-Klasik PAT:
+Klasik kişisel erişim belirteci:
 
 | Yetki | Kullanım |
 | --- | --- |
-| `repo` | Özel depolar ve Actions iptal / zorla iptal / yeniden çalıştırma |
+| `repo` | Özel depolar ve Actions iptal, zorla iptal, yeniden çalıştırma |
+| `read:org` | Kuruluş depolarını listeleme |
 | `admin:repo_hook` | Depo webhook teslimatları ve yeniden teslim |
 | `admin:org_hook` | Kuruluş webhook teslimatları ve yeniden teslim |
-| `read:org` | Kuruluş depolarını listeleme |
 
-İnce ayarlı belirteç:
+İnce ayarlı belirteç, temizlediğiniz kuruluşla sınırlı:
 
 - Metadata: Read
 - Actions: Read and write
 - Webhooks: Read and write
-- Administration: Read, kancaları listelemek için gerekiyorsa
-- Organization webhooks: Read and write, kuruluş kancaları için kuruluş belirtecinde
+- Administration: Read, kancaları listelemek bunu gerektiriyorsa
+- Organization webhooks: Read and write, kuruluş kancaları için
 
-GitHub App kurulumu:
+GitHub App kurulumu: Actions read and write, Webhooks read and write, Metadata read. App teslimatları (`/app/hook/...`) uygulama JWT'si ile kimlik doğrular; `GITHUB_APP_ID` ve özel anahtar gerekir. Taramayı belirteç yerine uygulama yapacaksa `GITHUB_APP_INSTALLATION_ID` de gerekir.
 
-- Actions: Read and write
-- Webhooks: Read and write
-- Metadata: Read
+Kesinti bitince belirteci iptal edin.
 
-App teslimatları (`GET` ve `POST /app/hook/...`) uygulama JWT'si ile kimlik doğrular. `GITHUB_APP_ID` ve özel anahtar gerekir. Taramayı PAT yerine uygulama yapacaksa `GITHUB_APP_INSTALLATION_ID` de gerekir.
+## Güvenlik
 
-## Geliştirme
+Aracı kendiniz çalıştırın. Belirteç ortam değişkeninden ya da sayfadaki maskeli alandan okunur ve yalnızca o süreç için bellekte tutulur. Diske yazılmaz, tarayıcıda saklanmaz, rapora ve günlüklere kopyalanmaz. Dry-run varsayılandır: GitHub, dry-run kapatılıp onaylanınca çağrılır. Bir güvenlik açığını nasıl bildireceğiniz [SECURITY.md](SECURITY.md) dosyasındadır.
 
-```bash
-npm run lint
-npm run typecheck
-npm test
-npm run build
-npm run demo
-```
+## Alternatifler
 
-GitHub API kararları `src/core` ve `src/github` içindedir. Arayüz Octokit'i doğrudan çağırmaz.
-
-`release-please` bir Node paketi için ayarlıdır. `skip-github-release` açıktır ve `.github/workflows/release-please.yml` içindeki npm publish işi yorum satırındadır. Yayımlamak için `"private": true` kaldırılmalı ve sahibi `workflow_dispatch` ile onaylamalıdır. Scorecard herkese açık Scorecard API'sine sonuç göndermez (`publish_results: false`). Bu özel depoda kod tarama açık olmadığı için CodeQL ve Scorecard, SARIF dosyalarını Security sekmesine yüklemek yerine iş akışı artifaktı olarak saklar.
+GitHub'ın kendi yeniden teslim örneği [tek depo için bir betiktir](https://docs.github.com/en/webhooks/using-webhooks/automatically-redelivering-failed-deliveries-for-a-repository-webhook). `webhook-redeliver-action` teslimatları tek bir depoyu Actions içinden yeniden oynatır. [Hookdeck](https://hookdeck.com/) olayları yönlendirmek, incelemek ve yeniden oynatmak için bir webhook platformudur. gh-aftermath, kesinti aralığı için kuruluş genelinde bir geçiştir: başarısız teslimatlar ve takılı Actions işleri birlikte, sizin denetlediğiniz bir makinede, saklayabileceğiniz bir raporla.
 
 ## İlgili
 
-[hook-stage](https://github.com/bymustfa/hook-stage) yerel webhook geliştirme ve inceleme içindir. gh-aftermath bir kesintiden sonra kuruluşu toparlamak içindir: başarısız teslimatları yeniden oynatır, hâlâ takılı işleri temizler.
+[hook-stage](https://github.com/bymustfa/hook-stage) yerel webhook geliştirme ve inceleme içindir. gh-aftermath bir kesintiden sonraki toparlanma içindir.
+
+## Katkı
+
+[CONTRIBUTING.md](CONTRIBUTING.md) dosyasına bakın. Yeni gelenler için işaretlenmiş konular: [good first issues](https://github.com/bymustfa/gh-aftermath/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
 ## Lisans
 

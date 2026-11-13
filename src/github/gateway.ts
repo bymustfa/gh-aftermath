@@ -1,3 +1,16 @@
+import {
+  credentialError,
+  formatMissingPermissions,
+  formatMissingScopes,
+  isCredentialFailure,
+  isHookPermissionFailure,
+  httpStatus,
+  missingAppPermissions,
+  missingClassicScopes,
+  parseOAuthScopeHeader,
+  readHeader,
+  AccessError,
+} from "../core/access.js";
 import { splitDeliveryPage, createdQualifier } from "../core/time.js";
 import type {
   HookRef,
@@ -13,11 +26,20 @@ import type {
 } from "../core/types.js";
 import { createGitHubClients, type GitHubAuth, type GitHubClients, type Logger, consoleLogger } from "./client.js";
 
+export interface GitHubResponse {
+  data: unknown;
+  status: number;
+  headers?: unknown;
+}
+
 export interface GitHubRequest {
-  (route: string, parameters?: Record<string, string | number | boolean | undefined>): Promise<{
-    data: unknown;
-    status: number;
-  }>;
+  (route: string, parameters?: Record<string, string | number | boolean | undefined>): Promise<GitHubResponse>;
+}
+
+export interface GatewayCredentials {
+  installationId?: string;
+  /** The user client is a GitHub App installation token, not a personal access token. */
+  installationToken?: boolean;
 }
 
 export interface RequestGatewayOptions {
@@ -26,6 +48,7 @@ export interface RequestGatewayOptions {
   perPage?: number;
   maxPages?: number;
   concurrency?: number;
+  credentials?: GatewayCredentials;
 }
 
 const RUN_STATUSES = ["queued", "in_progress", "waiting", "pending", "requested"] as const;
@@ -204,6 +227,52 @@ export function createRequestGateway(options: RequestGatewayOptions): ScanClient
   }
 
   return {
+    async verifyAccess() {
+      let user;
+      try {
+        user = await request("GET /user");
+      } catch (error) {
+        if (isCredentialFailure(error)) throw credentialError();
+        throw error;
+      }
+      const granted = parseOAuthScopeHeader(readHeader(user.headers, "x-oauth-scopes"));
+      if (granted) {
+        const missing = missingClassicScopes(granted);
+        if (missing.length > 0) throw new AccessError(formatMissingScopes(missing), 403);
+      }
+
+      const installationId = options.credentials?.installationId;
+      if (!options.credentials?.installationToken || !installationId || !appRequest) return;
+      let installation;
+      try {
+        installation = await appRequest("GET /app/installations/{installation_id}", {
+          installation_id: installationId,
+        });
+      } catch (error) {
+        if (isCredentialFailure(error)) {
+          throw new AccessError(
+            "GitHub rejected the GitHub App credentials (Bad credentials). The scan was stopped.",
+            401,
+          );
+        }
+        if (isHookPermissionFailure(error)) {
+          throw new AccessError(
+            `GitHub App installation ${installationId} could not be read (${httpStatus(error) ?? 404}). The scan was stopped.`,
+            403,
+          );
+        }
+        throw error;
+      }
+      const body = asRecord(installation.data);
+      const permissions = asRecord(body?.permissions) ?? {};
+      const normalized: Record<string, string | undefined> = {};
+      for (const [key, value] of Object.entries(permissions)) {
+        if (typeof value === "string") normalized[key] = value;
+      }
+      const missing = missingAppPermissions(normalized);
+      if (missing.length > 0) throw new AccessError(formatMissingPermissions(missing), 403);
+    },
+
     async listRepos(org) {
       const rows = await listArray("GET /orgs/{org}/repos", { org, type: "all" });
       const repos: RepoRef[] = [];
@@ -377,5 +446,9 @@ export function createGitHubGateway(
     perPage: options.perPage,
     maxPages: options.maxPages,
     concurrency: options.concurrency,
+    credentials: {
+      ...(auth.installationId ? { installationId: auth.installationId } : {}),
+      installationToken: !auth.token && Boolean(auth.installationId),
+    },
   });
 }

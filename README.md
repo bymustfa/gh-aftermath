@@ -1,48 +1,68 @@
 # gh-aftermath
 
-[Türkçe](README.tr.md)
+[English](README.md) | [Türkçe](README.tr.md)
 
 [![CI](https://github.com/bymustfa/gh-aftermath/actions/workflows/ci.yml/badge.svg)](https://github.com/bymustfa/gh-aftermath/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/bymustfa/gh-aftermath/actions/workflows/codeql.yml/badge.svg)](https://github.com/bymustfa/gh-aftermath/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://github.com/bymustfa/gh-aftermath/actions/workflows/scorecard.yml/badge.svg)](https://github.com/bymustfa/gh-aftermath/actions/workflows/scorecard.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![npm](https://img.shields.io/npm/v/gh-aftermath.svg)](https://www.npmjs.com/package/gh-aftermath)
+[![npm](https://img.shields.io/badge/npm-not%20yet%20published-lightgrey)](#quick-start)
 
-Self-hosted web UI for the cleanup after a GitHub incident. Pick the outage window. It lists failed and unanswered webhook deliveries across the organization's repositories, organization webhooks, and GitHub App deliveries, and it lists Actions runs that are still queued or have been in progress for too long. You can redeliver, cancel, force-cancel, and re-run them from one screen.
+Self-hosted web UI that cleans up an organization after a GitHub outage: replay the webhook deliveries that failed, and clear the Actions runs that are still stuck.
 
-Dry-run is on by default. The screen shows the exact `POST` that would be sent, and you can download a JSON or Markdown report of what was planned or done.
+## The problem
 
-The npm badge is a placeholder. Version 0.1.0 is not published, `package.json` is marked private, and the release workflow does not publish to npm or create GitHub Releases.
+When Actions or webhooks degrade, two kinds of work are left behind. Webhook deliveries fail or never get a response, and workflow runs sit in `queued` (or stay `in_progress` long after they should have finished). Replaying those by hand, one repository at a time, is how a short incident turns into a long afternoon.
 
-![Scan of the sample November 9 incident, with failed deliveries and stuck runs](docs/screenshot.png)
+On November 9, 2026, GitHub reported two separate incidents. From 09:23 to 11:40 UTC, a degraded job-queue cluster delayed webhook deliveries and Actions workflow runs ([Incident with Webhooks and Actions](https://www.githubstatus.com/incidents/xxb3l2bm76dr)). Between 18:07 and 18:59 UTC, Actions performance was degraded: some workflow runs failed to start, update, or report status, and Webhooks saw a secondary impact ([Incident with Actions and Checks API](https://www.githubstatus.com/incidents/tp8cghg7tlc4)).
 
-![Dry-run report listing the redeliver and cancel requests](docs/screenshot-report.png)
+A later thread on [Hacker News](https://news.ycombinator.com/item?id=50458532) discusses a November 11, 2026 incident, [Impact across multiple GitHub products including Actions, Pages, and Copilot products](https://www.githubstatus.com/incidents/dvy0t3mvh1lg). GitHub opened that incident at 20:48 UTC and resolved it at 21:21 UTC. gh-aftermath is a local tool for this kind of cleanup. It is not a status page and it does not speak for GitHub.
 
-![Demo: pick a window, dry-run, redeliver and force-cancel, then read the report](docs/demo.gif)
+## Features
 
-## Why this exists
+- Organization-wide scan over a UTC time window
+- Bulk webhook redelivery for repository hooks, organization hooks, and GitHub App deliveries
+- Cancel, force-cancel, and re-run for Actions runs that are still queued or in progress
+- Search and filters on the delivery and run lists
+- Dry-run by default, with the exact request shown before anything is sent
+- Downloadable JSON and Markdown reports
+- Demo mode with sample data, so you can click through the screen without a token
 
-After incidents such as the November 9 Actions and webhooks degradation, builds stayed queued, webhooks had to be replayed by hand, and some runs would not cancel. GitHub's own redelivery example is a single-repository script. `webhook-redeliver-action` replays one repo from Actions. VS Code webhook managers are per-hook desktop tools. Hookdeck is a paid webhook platform.
+## Demo
 
-gh-aftermath is the org-wide, time-windowed pass: webhooks and stuck runs together, in a web UI you can run yourself, with a report you can keep.
+![Demo: pick a window, dry-run a redelivery, then read the report](docs/demo.gif)
 
-## Install
+![Scan results: failed deliveries and stuck runs](docs/after-results-light.png)
 
-Node 20 or newer.
+![Dry-run report](docs/after-report-light.png)
+
+## Quick start
+
+Node.js 20 or newer. The package is not on npm yet.
 
 ```bash
-npx gh-aftermath --demo
-```
-
-`npx gh-aftermath` will work once the package is published. Until then, run it from a checkout or from the container:
-
-```bash
-npm install
+git clone https://github.com/bymustfa/gh-aftermath.git
+cd gh-aftermath
+npm ci
 npm run build
+npm start -- --demo
+```
+
+Open http://localhost:8787. Demo mode uses the sample organization `northwind` and does not call GitHub.
+
+Live mode is the same server without `--demo`. Set `GITHUB_TOKEN` and `GITHUB_ORG`, or start with no token and paste one into the page. A token entered on the page stays in that server process's memory only.
+
+```bash
+npm start
+```
+
+`npx` is coming soon, after the package is published:
+
+```bash
 npx gh-aftermath --demo
 ```
 
-Docker:
+Docker image: not published. Build it locally:
 
 ```bash
 docker build -t gh-aftermath .
@@ -50,97 +70,54 @@ docker run --rm -p 8787:8787 gh-aftermath --demo
 docker run --rm -p 8787:8787 -e GITHUB_TOKEN -e GITHUB_ORG=your-org gh-aftermath
 ```
 
-Open http://localhost:8787.
-
-## Usage
-
-1. Set the organization and the UTC window. Demo mode opens on the November 9 sample incident.
-2. Leave **Dry run** checked and scan.
-3. Select the deliveries and runs you want. Redeliver, cancel, force-cancel, or re-run. The report lists each `POST`.
-4. Turn dry-run off and run the same actions to call GitHub.
-5. Download the report as Markdown or JSON.
-
-```bash
-gh-aftermath --help
-gh-aftermath --demo --port 8787 --org northwind
-```
-
 | Variable | Purpose |
 | --- | --- |
-| `GITHUB_TOKEN` | PAT for the organization scan, redelivery, and Actions |
+| `GITHUB_TOKEN` | Personal access token for the scan, redelivery, and Actions |
 | `GITHUB_ORG` | Organization filled in on the form |
-| `GITHUB_APP_ID` | App id, required for `/app/hook` deliveries |
+| `GITHUB_APP_ID` | App id, required for App hook deliveries |
 | `GITHUB_APP_PRIVATE_KEY` or `GITHUB_APP_PRIVATE_KEY_PATH` | App private key |
-| `GITHUB_APP_INSTALLATION_ID` | Installation used when you scan with the app instead of a PAT |
+| `GITHUB_APP_INSTALLATION_ID` | Installation used when the app scans instead of a token |
 | `PORT` / `HOST` | Default `8787` and `0.0.0.0` |
 | `DEMO=1` | Same as `--demo` |
-| `CONCURRENCY` | Parallel GitHub calls. Default 4 |
-| `MAX_PAGES` | Pages of 100 read from each list. Default 20 |
-
-The token is read on the server. The page has no token field, and reports do not include it.
-
-### What gets flagged
-
-- A delivery is failed when its status code is 400 or higher, missing when the status code is `0` or absent, and failed when GitHub's status is anything other than `OK` / `success`.
-- Deliveries are read newest first. Paging stops once a page is older than the window.
-- A run is stuck when it is `queued`, `waiting`, `pending`, or `requested`, it was created in the window, and it is older than the queued threshold (default 10 minutes).
-- A run is stuck when it is `in_progress`, it started in the window, and it has been running longer than the in-progress threshold (default 60 minutes).
-- Runs that already finished are not listed. GitHub only returns current state.
-
-Redelivery uses the official endpoints:
-
-- `POST /repos/{owner}/{repo}/hooks/{hook_id}/deliveries/{delivery_id}/attempts`
-- `POST /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}/attempts`
-- `POST /app/hook/deliveries/{delivery_id}/attempts`
-
-Stuck runs use `POST /repos/{owner}/{repo}/actions/runs/{run_id}/cancel`, `.../force-cancel`, and `.../rerun`.
-
-Octokit is created with the retry and throttling plugins. Primary and secondary rate limits are retried up to three times.
 
 ## Token scopes
 
-Classic PAT:
+Classic personal access token:
 
 | Scope | Used for |
 | --- | --- |
-| `repo` | Private repositories, and Actions cancel / force-cancel / re-run |
+| `repo` | Private repositories, and Actions cancel, force-cancel, and re-run |
+| `read:org` | Listing the organization's repositories |
 | `admin:repo_hook` | Repository webhook deliveries and redelivery |
 | `admin:org_hook` | Organization webhook deliveries and redelivery |
-| `read:org` | Listing organization repositories |
 
-Fine-grained token:
+Fine-grained token, limited to the organization you are cleaning up:
 
 - Metadata: Read
 - Actions: Read and write
 - Webhooks: Read and write
-- Administration: Read, where listing hooks requires it
-- Organization webhooks: Read and write, on an organization token, for org hooks
+- Administration: Read, when listing hooks requires it
+- Organization webhooks: Read and write, for organization hooks
 
-GitHub App installation:
+GitHub App installation: Actions read and write, Webhooks read and write, and Metadata read. App deliveries (`/app/hook/...`) authenticate with the app JWT, so set `GITHUB_APP_ID` and the private key. Set `GITHUB_APP_INSTALLATION_ID` as well when the app, rather than a token, should scan the organization.
 
-- Actions: Read and write
-- Webhooks: Read and write
-- Metadata: Read
+Revoke the token when the incident is over.
 
-App deliveries (`GET` and `POST /app/hook/...`) authenticate as the app JWT. Set `GITHUB_APP_ID` and the private key. Set `GITHUB_APP_INSTALLATION_ID` as well when the app, rather than a PAT, should scan the organization.
+## Security
 
-## Development
+Run it yourself. The token is read from the environment, or from the masked field on the page, and kept in memory for that process only. It is not written to disk, not stored in the browser, and not copied into the report or the logs. Dry-run is the default: GitHub is called only after you turn dry-run off and confirm. See [SECURITY.md](SECURITY.md) for how to report a vulnerability.
 
-```bash
-npm run lint
-npm run typecheck
-npm test
-npm run build
-npm run demo
-```
+## Alternatives
 
-GitHub API decisions live in `src/core` and `src/github`. The UI does not call Octokit directly.
-
-`release-please` is set up for a Node package. `skip-github-release` is true, and the npm publish job in `.github/workflows/release-please.yml` is commented out. Publishing also requires removing `"private": true` and an owner-approved `workflow_dispatch`. Scorecard stays off the public Scorecard API (`publish_results: false`). Code scanning is not enabled on this private repository, so CodeQL and Scorecard keep their SARIF files as workflow artifacts instead of uploading them to the Security tab.
+GitHub's own redelivery example is a [script for one repository](https://docs.github.com/en/webhooks/using-webhooks/automatically-redelivering-failed-deliveries-for-a-repository-webhook). `webhook-redeliver-action` replays deliveries for one repository from inside Actions. [Hookdeck](https://hookdeck.com/) is a webhook platform for routing, inspecting, and replaying events. gh-aftermath is the org-wide pass for the outage window: failed deliveries and stuck Actions runs together, on a machine you control, with a report you can keep.
 
 ## Related
 
-[hook-stage](https://github.com/bymustfa/hook-stage) is for local webhook development and inspection. gh-aftermath is for recovering an organization after an outage: replay the deliveries that failed, and clear the runs that are still stuck.
+[hook-stage](https://github.com/bymustfa/hook-stage) is for local webhook development and inspection. gh-aftermath is for the recovery after an outage.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Issues labeled for newcomers are listed at [good first issues](https://github.com/bymustfa/gh-aftermath/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
 ## License
 

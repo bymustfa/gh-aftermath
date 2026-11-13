@@ -12,7 +12,7 @@ Please report security issues privately through [GitHub Security Advisories](htt
 
 ## Token handling
 
-`gh-aftermath` reads `GITHUB_TOKEN` and the optional GitHub App private key from the environment or a file path you pass in. The web UI does not accept a token, and the server does not write tokens into the report, the HTML, or info logs.
+`gh-aftermath` reads `GITHUB_TOKEN` and the optional GitHub App private key from the environment or a file path you pass in. If `GITHUB_TOKEN` is missing, the page accepts a token and keeps it in server memory for that process only. The server does not write tokens to disk, the report, the HTML, or info logs.
 
 Use a token that can read the organization and write webhook deliveries and Actions runs. Prefer a fine-grained token limited to the organization you are cleaning up, and revoke it when the incident is over.
 

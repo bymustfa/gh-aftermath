@@ -73,7 +73,14 @@ export interface RateLimitSnapshot {
   reset: string;
 }
 
+export interface AccessCheckInput {
+  org: string;
+  includeApp: boolean;
+}
+
 export interface ScanClient {
+  /** Confirm the token and report missing scopes before a scan. Demo mode omits this. */
+  verifyAccess?(input: AccessCheckInput): Promise<void>;
   listRepos(org: string): Promise<RepoRef[]>;
   listOrgHooks(org: string): Promise<HookRef[]>;
   listRepoHooks(owner: string, repo: string): Promise<HookRef[]>;
