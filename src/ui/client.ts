@@ -80,13 +80,7 @@ const clientProgram = `
   }
 
   function formatTime(iso) {
-    if (!iso) return "undated";
-    var date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return iso;
-    var formatted = new Intl.DateTimeFormat("en-GB", {
-      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC"
-    }).format(date);
-    return formatted + " UTC";
+    return formatUtcStamp(iso);
   }
 
   function formatAge(iso) {
@@ -357,7 +351,7 @@ const clientProgram = `
       ]);
       var row = el("tr", { className: checked ? "selected" : "" }, [
         el("td", {}, [box]),
-        el("td", { className: "mono", text: formatTime(delivery.deliveredAt) }),
+        el("td", { className: "mono when", text: formatTime(delivery.deliveredAt) }),
         el("td", {}, [
           el("span", { text: whereOf(delivery) }),
           delivery.targetUrl ? el("span", { className: "sub", text: softWrap(delivery.targetUrl) }) : null
@@ -406,7 +400,7 @@ const clientProgram = `
       var started = run.runStartedAt || run.createdAt;
       var link = el("a", { href: run.htmlUrl, target: "_blank", rel: "noreferrer", text: softWrap(run.owner + "/" + run.repo) });
       row.appendChild(el("td", {}, [box]));
-      row.appendChild(el("td", { className: "mono", text: formatTime(started) }));
+      row.appendChild(el("td", { className: "mono when", text: formatTime(started) }));
       row.appendChild(el("td", {}, [link, el("span", { className: "sub", text: softWrap(run.headBranch || "") })]));
       row.appendChild(el("td", {}, [el("span", { text: softWrap(run.name) }), run.displayTitle && run.displayTitle !== run.name ? el("span", { className: "sub", text: softWrap(run.displayTitle) }) : null]));
       row.appendChild(el("td", {}, [el("span", { className: pillClass, text: run.status })]));

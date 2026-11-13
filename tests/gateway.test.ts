@@ -21,6 +21,23 @@ function delivery(id: number, deliveredAt: string) {
 }
 
 describe("GitHub gateway", () => {
+  it("drops same-day deliveries that are outside the selected window", async () => {
+    const narrow = { from: "2026-11-09T09:23:00.000Z", to: "2026-11-09T11:40:00.000Z" };
+    const request: GitHubRequest = async () => ({
+      status: 200,
+      data: [
+        delivery(1, "2026-11-09T18:53:00.000Z"),
+        delivery(2, "2026-11-09T18:46:00.000Z"),
+        delivery(3, "2026-11-09T18:41:00.000Z"),
+        delivery(4, "2026-11-09T10:53:44.000Z"),
+      ],
+    });
+    const gateway = createRequestGateway({ request, perPage: 10, maxPages: 3 });
+    const rows = await gateway.listRepoDeliveries("acme", "web", 3, narrow);
+    expect(rows.map((row) => row.id)).toEqual([4]);
+    expect(rows[0]?.deliveredAt).toBe("2026-11-09T10:53:44.000Z");
+  });
+
   it("pages deliveries newest-first and stops once the window is passed", async () => {
     const calls: string[] = [];
     const request: GitHubRequest = async (route, params) => {

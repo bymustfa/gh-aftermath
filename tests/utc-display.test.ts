@@ -93,14 +93,19 @@ describe("UTC window fields", () => {
         console.error("preset", JSON.stringify(window));
         process.exit(7);
       }
-      const sandbox = { result: "" };
+      const sandbox = { result: "", stamps: null };
       vm.createContext(sandbox);
       vm.runInContext(embeddedLogic + "\\nresult = toUtcDateTimeLocal(new Date('2026-11-13T15:04:00.000Z'));", sandbox);
       if (sandbox.result !== shown) {
         console.error("embedded", sandbox.result);
         process.exit(8);
       }
-      console.log(JSON.stringify({ shown, sent, localHour: instant.getHours() }));
+      const stamps = {};
+      vm.runInContext(
+        embeddedLogic + "\\nstamps = { inside: formatUtcStamp('2026-11-09T10:53:44.000Z'), outside: formatUtcStamp('2026-11-09T18:53:00.000Z') };",
+        sandbox,
+      );
+      console.log(JSON.stringify({ shown, sent, localHour: instant.getHours(), stamps: sandbox.stamps }));
     `;
     const result = spawnSync(process.execPath, [tsxCli, "--eval", script], {
       cwd: root,
@@ -109,9 +114,15 @@ describe("UTC window fields", () => {
     });
     expect(result.stderr).toBe("");
     expect(result.status).toBe(0);
-    const parsed = JSON.parse(result.stdout) as { shown: string; sent: string; localHour: number };
+    const parsed = JSON.parse(result.stdout) as {
+      shown: string;
+      sent: string;
+      localHour: number;
+      stamps: { inside: string; outside: string };
+    };
     expect(parsed.localHour).not.toBe(15);
     expect(parsed.shown).toBe("2026-11-13T15:04");
+    expect(parsed.stamps).toEqual({ inside: "09 Nov 10:53Z", outside: "09 Nov 18:53Z" });
     expect(parsed.sent).toBe(parsed.shown);
   });
 });

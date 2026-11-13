@@ -308,7 +308,8 @@ svg#timeline { width: 100%; height: 78px; display: block; margin-top: 8px; }
 table { width: 100%; border-collapse: collapse; }
 .deliveries { table-layout: fixed; }
 .deliveries th:nth-child(1) { width: 2.75rem; }
-.deliveries th:nth-child(2) { width: 9.75rem; }
+.deliveries th:nth-child(2) { width: 11.5rem; }
+.table-scroll td.when { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .deliveries th:nth-child(4) { width: 18%; }
 .deliveries th:nth-child(5) { width: 5.75rem; }
 .runs { table-layout: fixed; width: 100%; }

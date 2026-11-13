@@ -227,6 +227,21 @@ export function createApp(options: ServerOptions): Hono {
       const operations = parseOperations(body.operations);
       if (operations.length === 0) throw new Error("Select at least one delivery or workflow run.");
       assertCompatibleRunPlans(operations);
+      if (scan) {
+        for (const operation of operations) {
+          if (operation.type === "redeliver") {
+            if (!scan.deliveries.some((delivery) => delivery.id === operation.deliveryId)) {
+              throw new Error("That delivery is outside the scanned window, so it was not redelivered.");
+            }
+          } else if (
+            !scan.runs.some(
+              (run) => run.id === operation.runId && run.owner === operation.owner && run.repo === operation.repo,
+            )
+          ) {
+            throw new Error("That workflow run is outside the scanned window, so it was not changed.");
+          }
+        }
+      }
       const performed = await executeOperations(operations, active, {
         dryRun,
         concurrency: options.concurrency,

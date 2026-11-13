@@ -1,6 +1,8 @@
+import { isWithinWindow } from "../core/time.js";
 import type {
   RateLimitSnapshot,
   RawDelivery,
+  RawRun,
   RecoveryClient,
   RedeliverTarget,
   RunTarget,
@@ -36,29 +38,38 @@ export function createDemoGateway(options: DemoGatewayOptions = {}): ScanClient 
         .filter((hook) => hook.scope === "repo" && hook.owner === owner && hook.repo === repo)
         .map((hook) => ({ ...hook, events: [...hook.events] }));
     },
-    async listOrgDeliveries(_org, hookId, _window: TimeWindow) {
-      return state.deliveries.filter((delivery) => delivery.scope === "org" && delivery.hookId === hookId).map((d) => ({ ...d }));
+    async listOrgDeliveries(_org, hookId, window: TimeWindow) {
+      return state.deliveries
+        .filter(
+          (delivery) =>
+            delivery.scope === "org" && delivery.hookId === hookId && isWithinWindow(delivery.deliveredAt, window),
+        )
+        .map((delivery) => ({ ...delivery }));
     },
-    async listRepoDeliveries(owner, repo, hookId) {
+    async listRepoDeliveries(owner, repo, hookId, window) {
       return state.deliveries
         .filter(
           (delivery) =>
             delivery.scope === "repo" &&
             delivery.hookId === hookId &&
             delivery.owner === owner &&
-            delivery.repo === repo,
+            delivery.repo === repo &&
+            isWithinWindow(delivery.deliveredAt, window),
         )
         .map((delivery) => ({ ...delivery }));
     },
-    async listAppDeliveries() {
-      return state.deliveries.filter((delivery) => delivery.scope === "app").map((delivery) => ({ ...delivery }));
+    async listAppDeliveries(window) {
+      return state.deliveries
+        .filter((delivery) => delivery.scope === "app" && isWithinWindow(delivery.deliveredAt, window))
+        .map((delivery) => ({ ...delivery }));
     },
-    async listWorkflowRuns() {
+    async listWorkflowRuns(_org, window) {
       const now = new Date();
       const fresh = new Date(now.getTime() - 2 * 60 * 1000).toISOString();
-      return state.runs.map((run) => {
-        if (run.id !== 1006) return { ...run };
-        return { ...run, createdAt: fresh, updatedAt: fresh, runStartedAt: fresh };
+      return state.runs.flatMap((run) => {
+        const next: RawRun = run.id === 1006 ? { ...run, createdAt: fresh, updatedAt: fresh, runStartedAt: fresh } : { ...run };
+        const stamp = next.runStartedAt || next.createdAt;
+        return isWithinWindow(stamp, window) ? [next] : [];
       });
     },
     async rateLimit(): Promise<RateLimitSnapshot> {

@@ -1,5 +1,13 @@
 /** Plain browser script. Kept as text so the page does not depend on the bundler's function helpers. */
 export const logicSource = [
+  "function formatUtcStamp(iso) {",
+  "  if (!iso) return \"undated\";",
+  "  var date = new Date(iso);",
+  "  if (Number.isNaN(date.getTime())) return String(iso);",
+  "  var months = [\"Jan\", \"Feb\", \"Mar\", \"Apr\", \"May\", \"Jun\", \"Jul\", \"Aug\", \"Sep\", \"Oct\", \"Nov\", \"Dec\"];",
+  "  function pad(value) { return String(value).padStart(2, \"0\"); }",
+  "  return pad(date.getUTCDate()) + \" \" + months[date.getUTCMonth()] + \" \" + pad(date.getUTCHours()) + \":\" + pad(date.getUTCMinutes()) + \"Z\";",
+  "}",
   "function toUtcDateTimeLocal(date) {",
   "  function pad(value) { return String(value).padStart(2, \"0\"); }",
   "  return date.getUTCFullYear() + \"-\" + pad(date.getUTCMonth() + 1) + \"-\" + pad(date.getUTCDate()) + \"T\" + pad(date.getUTCHours()) + \":\" + pad(date.getUTCMinutes());",

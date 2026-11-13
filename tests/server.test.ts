@@ -80,6 +80,19 @@ describe("demo server", () => {
     expect(body.markdown).toContain("Failed or missing deliveries: 9");
     expect(body.deliveries.some((delivery: { id: number }) => delivery.id === 801)).toBe(false);
     expect(body.deliveries.some((delivery: { id: number }) => delivery.id === 510)).toBe(false);
+    const from = Date.parse("2026-11-09T09:23:00.000Z");
+    const to = Date.parse("2026-11-09T11:40:00.000Z");
+    for (const delivery of body.deliveries as { deliveredAt: string }[]) {
+      const time = Date.parse(delivery.deliveredAt);
+      expect(time).toBeGreaterThanOrEqual(from);
+      expect(time).toBeLessThanOrEqual(to);
+    }
+    for (const run of body.runs as { createdAt: string; runStartedAt: string | null }[]) {
+      const time = Date.parse(run.runStartedAt || run.createdAt);
+      expect(time).toBeGreaterThanOrEqual(from);
+      expect(time).toBeLessThanOrEqual(to);
+    }
+    expect(body.deliveries.some((delivery: { deliveredAt: string }) => delivery.deliveredAt.startsWith("2026-11-09T10:53"))).toBe(true);
   });
 
   it("keeps the November 9 Actions window separate from the webhook window", async () => {
@@ -99,6 +112,36 @@ describe("demo server", () => {
     expect(body.counts).toMatchObject({ failedDeliveries: 2, stuckRuns: 2 });
     expect(body.runs.map((run: { id: number }) => run.id).sort()).toEqual([1009, 1010]);
     expect(body.deliveries.map((delivery: { id: number }) => delivery.id).sort()).toEqual([510, 511]);
+    const from = Date.parse("2026-11-09T18:07:00.000Z");
+    const to = Date.parse("2026-11-09T18:59:00.000Z");
+    for (const delivery of body.deliveries as { deliveredAt: string }[]) {
+      const time = Date.parse(delivery.deliveredAt);
+      expect(time).toBeGreaterThanOrEqual(from);
+      expect(time).toBeLessThanOrEqual(to);
+    }
+    for (const run of body.runs as { createdAt: string; runStartedAt: string | null }[]) {
+      const time = Date.parse(run.runStartedAt || run.createdAt);
+      expect(time).toBeGreaterThanOrEqual(from);
+      expect(time).toBeLessThanOrEqual(to);
+    }
+  });
+
+  it("does not redeliver a delivery outside the scanned window", async () => {
+    const application = app();
+    await scan(application);
+    const refused = await application.request("/api/execute", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        dryRun: true,
+        operations: [
+          { type: "redeliver", scope: "repo", owner: "northwind", repo: "checkout-api", hookId: 11, deliveryId: 510 },
+        ],
+      }),
+    });
+    const body = await refused.json();
+    expect(refused.status).toBe(400);
+    expect(body.error).toMatch(/outside the scanned window/);
   });
 
   it("includes the dated ping only when the window covers it", async () => {
