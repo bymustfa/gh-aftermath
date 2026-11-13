@@ -42,7 +42,7 @@ const clientProgram = `
   }
 
   function markPreset(id) {
-    ["preset-1h", "preset-6h", "preset-24h", "preset-incident"].forEach(function (key) {
+    ["preset-1h", "preset-6h", "preset-24h", "preset-webhooks", "preset-actions"].forEach(function (key) {
       var node = $(key);
       if (node) node.setAttribute("aria-pressed", key === id ? "true" : "false");
     });
@@ -584,10 +584,17 @@ const clientProgram = `
   });
   $("from").addEventListener("change", function () { markPreset(""); drawTimeline(); });
   $("to").addEventListener("change", function () { markPreset(""); drawTimeline(); });
-  $("preset-incident").addEventListener("click", function () {
-    $("from").value = boot.incidentFrom;
-    $("to").value = boot.incidentTo;
-    markPreset("preset-incident");
+  $("preset-webhooks").addEventListener("click", function () {
+    $("from").value = boot.webhookFrom;
+    $("to").value = boot.webhookTo;
+    markPreset("preset-webhooks");
+    clearStaleError();
+    drawTimeline();
+  });
+  $("preset-actions").addEventListener("click", function () {
+    $("from").value = boot.actionsFrom;
+    $("to").value = boot.actionsTo;
+    markPreset("preset-actions");
     clearStaleError();
     drawTimeline();
   });

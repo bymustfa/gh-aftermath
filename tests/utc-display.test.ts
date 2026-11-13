@@ -41,8 +41,13 @@ describe("UTC window fields", () => {
     expect(to).toContain('type="text"');
     expect(from).not.toContain("datetime-local");
     expect(to).not.toContain("datetime-local");
-    expect(from).toContain('value="2026-11-09T14:00"');
-    expect(to).toContain('value="2026-11-09T18:30"');
+    expect(from).toContain('value="2026-11-09T09:23"');
+    expect(to).toContain('value="2026-11-09T11:40"');
+    expect(html).toContain("Nov 9 webhooks");
+    expect(html).toContain("Nov 9 Actions");
+    expect(html).toContain("2026-11-09T18:07");
+    expect(html).toContain("2026-11-09T18:59");
+    expect(html).not.toContain("Nov 9 incident");
     expect(html).toContain(">UTC<");
     expect(html).toContain("characters you see are the characters that are sent");
     expect(clientSource).toContain('from: $("from").value');

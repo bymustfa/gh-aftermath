@@ -1,4 +1,4 @@
-import { DEMO_INCIDENT } from "../demo/fixtures.js";
+import { DEMO_ACTIONS_WINDOW, DEMO_WEBHOOK_WINDOW } from "../demo/fixtures.js";
 import { clientSource } from "./client.js";
 import { escapeHtml, safeJson } from "./html.js";
 import { flowStyles } from "./flow-styles.js";
@@ -18,8 +18,10 @@ export function renderPage(boot: PageBoot): string {
   const org = escapeHtml(boot.org);
   const payload = safeJson({
     demo: boot.demo,
-    incidentFrom: DEMO_INCIDENT.fromLocal,
-    incidentTo: DEMO_INCIDENT.toLocal,
+    webhookFrom: DEMO_WEBHOOK_WINDOW.fromLocal,
+    webhookTo: DEMO_WEBHOOK_WINDOW.toLocal,
+    actionsFrom: DEMO_ACTIONS_WINDOW.fromLocal,
+    actionsTo: DEMO_ACTIONS_WINDOW.toLocal,
     version: boot.version,
     needsToken: boot.needsToken,
   });
@@ -47,11 +49,11 @@ export function renderPage(boot: PageBoot): string {
   </form>`
     : "";
   const banner = boot.demo
-    ? `<p class="banner" id="banner">Demo mode uses sample data from a November 9 Actions and webhooks incident. No GitHub token is used.</p>`
+    ? `<p class="banner" id="banner">Demo mode uses sample data inside the two November 9, 2026 windows GitHub reported: webhook delays 09:23–11:40 UTC, and an Actions degradation 18:07–18:59 UTC. No GitHub token is used.</p>`
     : "";
-  const from = boot.demo ? DEMO_INCIDENT.fromLocal : "";
-  const to = boot.demo ? DEMO_INCIDENT.toLocal : "";
-  const incidentPressed = boot.demo ? ` aria-pressed="true"` : ` aria-pressed="false"`;
+  const from = boot.demo ? DEMO_WEBHOOK_WINDOW.fromLocal : "";
+  const to = boot.demo ? DEMO_WEBHOOK_WINDOW.toLocal : "";
+  const webhookPressed = boot.demo ? ` aria-pressed="true"` : ` aria-pressed="false"`;
   return `<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -105,7 +107,8 @@ try {
       <button class="preset" id="preset-1h" type="button" aria-pressed="false">Last 1 hour</button>
       <button class="preset" id="preset-6h" type="button" aria-pressed="false">Last 6 hours</button>
       <button class="preset" id="preset-24h" type="button" aria-pressed="false">Last 24 hours</button>
-      <button class="preset" id="preset-incident" type="button"${incidentPressed}>Nov 9 incident</button>
+      <button class="preset" id="preset-webhooks" type="button"${webhookPressed}>Nov 9 webhooks</button>
+      <button class="preset" id="preset-actions" type="button" aria-pressed="false">Nov 9 Actions</button>
     </div>
     <div class="switch-row">
       <label class="switch">

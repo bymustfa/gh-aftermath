@@ -14,7 +14,9 @@ GitHub kesintisinden sonra kuruluşu toparlamak için kendi sunucunuzda çalış
 
 Actions ya da webhook'lar bozulunca geride iki tür iş kalır. Webhook teslimatları başarısız olur ya da hiç yanıt alamaz. İş akışı çalıştırmaları `queued` durumunda bekler, ya da bitmesi gerekirken uzun süre `in_progress` kalır. Bunları depo depo elle yeniden oynatmak, kısa bir kesintiyi uzun bir öğleden sonraya çevirir.
 
-9 Kasım 2026'da GitHub, Actions ve webhook'larda bir bozulma bildirdi. Aynı aralık, [Hacker News](https://news.ycombinator.com/item?id=50458532) üzerinde de konuşuldu. gh-aftermath bu tür bir temizlik için yerel bir araçtır. Bir durum sayfası değildir ve GitHub adına konuşmaz.
+9 Kasım 2026'da GitHub iki ayrı olay bildirdi. 09:23 ile 11:40 UTC arasında bozulan bir iş kuyruğu kümesi, webhook teslimatlarını ve Actions iş akışı çalıştırmalarını geciktirdi ([Incident with Webhooks and Actions](https://www.githubstatus.com/incidents/xxb3l2bm76dr)). 18:07 ile 18:59 UTC arasında Actions performansı düştü: bazı iş akışı çalıştırmaları başlamadı, güncellenmedi ya da durumu doğru bildiremedi; Webhooks ikincil olarak etkilendi ([Incident with Actions and Checks API](https://www.githubstatus.com/incidents/tp8cghg7tlc4)).
+
+[Hacker News](https://news.ycombinator.com/item?id=50458532) üzerindeki daha sonraki bir başlık, 11 Kasım 2026 olayını tartışır: [Impact across multiple GitHub products including Actions, Pages, and Copilot products](https://www.githubstatus.com/incidents/dvy0t3mvh1lg). GitHub bu olayı 20:48 UTC'de açtı ve 21:21 UTC'de çözüldü olarak kapattı. gh-aftermath bu tür bir temizlik için yerel bir araçtır. Bir durum sayfası değildir ve GitHub adına konuşmaz.
 
 ## Özellikler
 

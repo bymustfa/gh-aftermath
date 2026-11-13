@@ -14,7 +14,9 @@ Self-hosted web UI that cleans up an organization after a GitHub outage: replay 
 
 When Actions or webhooks degrade, two kinds of work are left behind. Webhook deliveries fail or never get a response, and workflow runs sit in `queued` (or stay `in_progress` long after they should have finished). Replaying those by hand, one repository at a time, is how a short incident turns into a long afternoon.
 
-On November 9, 2026, GitHub reported a degradation of Actions and webhooks. The same window is what people were comparing notes about on [Hacker News](https://news.ycombinator.com/item?id=50458532). gh-aftermath is a local tool for that kind of cleanup. It is not a status page and it does not speak for GitHub.
+On November 9, 2026, GitHub reported two separate incidents. From 09:23 to 11:40 UTC, a degraded job-queue cluster delayed webhook deliveries and Actions workflow runs ([Incident with Webhooks and Actions](https://www.githubstatus.com/incidents/xxb3l2bm76dr)). Between 18:07 and 18:59 UTC, Actions performance was degraded: some workflow runs failed to start, update, or report status, and Webhooks saw a secondary impact ([Incident with Actions and Checks API](https://www.githubstatus.com/incidents/tp8cghg7tlc4)).
+
+A later thread on [Hacker News](https://news.ycombinator.com/item?id=50458532) discusses a November 11, 2026 incident, [Impact across multiple GitHub products including Actions, Pages, and Copilot products](https://www.githubstatus.com/incidents/dvy0t3mvh1lg). GitHub opened that incident at 20:48 UTC and resolved it at 21:21 UTC. gh-aftermath is a local tool for this kind of cleanup. It is not a status page and it does not speak for GitHub.
 
 ## Features
 

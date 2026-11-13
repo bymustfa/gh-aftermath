@@ -24,8 +24,8 @@ async function scan(application = app()) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       org: "northwind",
-      from: "2026-11-09T14:00",
-      to: "2026-11-09T18:30",
+      from: "2026-11-09T09:23",
+      to: "2026-11-09T11:40",
       queuedMinutes: 10,
       inProgressMinutes: 60,
       includeApp: true,
@@ -79,6 +79,26 @@ describe("demo server", () => {
     expect(names).not.toContain("Lint");
     expect(body.markdown).toContain("Failed or missing deliveries: 9");
     expect(body.deliveries.some((delivery: { id: number }) => delivery.id === 801)).toBe(false);
+    expect(body.deliveries.some((delivery: { id: number }) => delivery.id === 510)).toBe(false);
+  });
+
+  it("keeps the November 9 Actions window separate from the webhook window", async () => {
+    const application = app();
+    const response = await application.request("/api/scan", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        org: "northwind",
+        from: "2026-11-09T18:07",
+        to: "2026-11-09T18:59",
+        includeApp: true,
+      }),
+    });
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.counts).toMatchObject({ failedDeliveries: 2, stuckRuns: 2 });
+    expect(body.runs.map((run: { id: number }) => run.id).sort()).toEqual([1009, 1010]);
+    expect(body.deliveries.map((delivery: { id: number }) => delivery.id).sort()).toEqual([510, 511]);
   });
 
   it("includes the dated ping only when the window covers it", async () => {

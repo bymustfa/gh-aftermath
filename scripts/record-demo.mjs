@@ -79,7 +79,7 @@ try {
   await pause(page, 600);
   await page.click("#preset-6h");
   await pause(page, 900);
-  await page.click("#preset-incident");
+  await page.click("#preset-webhooks");
   await pause(page, 800);
   await page.click("#scan-button");
   await page.waitForSelector("#deliveries-body tr.selected, #deliveries-body td", { timeout: 10000 });
