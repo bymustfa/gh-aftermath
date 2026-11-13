@@ -10,7 +10,7 @@ npm test
 npm run demo
 ```
 
-Open http://localhost:8787. Demo mode does not need a token. Live mode needs `GITHUB_TOKEN` or GitHub App credentials. See `.env.example` and the README for scopes.
+Open http://localhost:8787. Demo mode does not need a token. Live mode uses `GITHUB_TOKEN` or GitHub App credentials when they are set. If they are missing, the server still starts and the page asks for a token, kept in server memory only. See `.env.example` and the README for scopes.
 
 ## Checks
 

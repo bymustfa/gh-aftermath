@@ -3,12 +3,9 @@ export interface UtcDateTimeLocal {
   to: string;
 }
 
-function pad(value: number): string {
-  return String(value).padStart(2, "0");
-}
-
-/** UTC `datetime-local` value, minute precision, no timezone suffix. */
+/** UTC field text, minute precision. This is the value shown and the value sent. */
 export function toUtcDateTimeLocal(date: Date): string {
+  const pad = (value: number): string => String(value).padStart(2, "0");
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
 }
 
