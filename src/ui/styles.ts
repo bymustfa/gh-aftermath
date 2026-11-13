@@ -306,24 +306,27 @@ svg#timeline { width: 100%; height: 78px; display: block; margin-top: 8px; }
 .count { color: var(--muted-foreground); font-family: var(--font-body); font-weight: 500; font-size: 16px; letter-spacing: 0; }
 .table-scroll { position: relative; max-height: 360px; max-width: 100%; min-width: 0; overflow: auto; margin-top: 12px; }
 table { width: 100%; border-collapse: collapse; }
-.deliveries { table-layout: fixed; }
+.deliveries, .runs { table-layout: fixed; width: 100%; }
+.deliveries { min-width: 36rem; }
+.runs { min-width: 40rem; }
 .deliveries th:nth-child(1) { width: 2.75rem; }
-.deliveries th:nth-child(2),
-.runs th:nth-child(2) { width: 5.75rem; }
+.deliveries th:nth-child(2) { width: 6.5rem; }
+.deliveries th:nth-child(3) { width: 34%; }
+.deliveries th:nth-child(4) { width: 22%; }
+.deliveries th:nth-child(5) { width: 6.5rem; }
+.runs th:nth-child(1) { width: 2.5rem; }
+.runs th:nth-child(2) { width: 6.5rem; }
+.runs th:nth-child(3) { width: 10rem; }
+.runs th:nth-child(4) { width: 10rem; }
+.runs th:nth-child(5) { width: 6.5rem; }
+.runs th:nth-child(6) { width: 3.5rem; }
 td.when {
   font-family: Inter, var(--font-body), sans-serif;
   font-variant-numeric: tabular-nums lining-nums;
   font-feature-settings: "tnum" 1;
 }
 .when-date, .when-time { display: block; white-space: nowrap; line-height: 1.35; }
-.place { display: block; max-width: 100%; overflow-wrap: break-word; }
-.runs th:nth-child(3) { width: 7.5rem; }
-.deliveries th:nth-child(4) { width: 18%; }
-.deliveries th:nth-child(5) { width: 5.75rem; }
-.runs { table-layout: fixed; width: 100%; }
-.runs th:nth-child(1) { width: 2.25rem; }
-.runs th:nth-child(5) { width: 6.25rem; }
-.runs th:nth-child(6) { width: 3rem; }
+.place { display: block; max-width: 100%; overflow-wrap: normal; word-break: normal; }
 .table-scroll .mono { white-space: normal; }
 th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
 th { position: sticky; top: 0; background: var(--card); color: var(--muted-foreground); font-size: 12px; font-weight: 600; }
@@ -392,7 +395,7 @@ dialog::backdrop { background: rgba(19, 17, 28, 0.48); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 .toast { display: none; }
 .toast.error { display: none; }
-footer.note {
+p.note {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto 28px;
   color: var(--muted-foreground);

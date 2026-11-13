@@ -159,14 +159,32 @@ describe("accessibility", () => {
           const cells = document.querySelectorAll(
             "#deliveries-body td.when, #deliveries-body td.repo, #runs-body td.when, #runs-body td.repo, #runs-body td.workflow",
           );
+          const minText = 6 * 16;
           for (const cell of cells) {
+            if (!(cell instanceof HTMLElement)) continue;
             const next = cell.nextElementSibling;
             if (next instanceof HTMLElement && hits(box(cell), box(next))) {
               problems.push(`overlap ${cell.textContent?.trim()} / ${next.textContent?.trim()?.slice(0, 40)}`);
             }
+            if (cell.getBoundingClientRect().width < minText - 1) {
+              problems.push(`narrow ${Math.round(cell.getBoundingClientRect().width)}px ${cell.textContent?.trim()?.slice(0, 40)}`);
+            }
             if (cell.scrollWidth > cell.clientWidth + 1) problems.push(`clipped ${cell.textContent?.trim()?.slice(0, 40)}`);
-            for (const part of cell.querySelectorAll(".when-date, .when-time, .place, a.place")) {
-              if (part.scrollWidth > part.clientWidth + 1) problems.push(`part clipped ${part.textContent?.trim()?.slice(0, 40)}`);
+            const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+            while (walker.nextNode()) {
+              const node = walker.currentNode;
+              if (!(node instanceof Text) || node.parentElement?.closest(".sub")) continue;
+              const source = node.textContent ?? "";
+              const pattern = /[A-Za-z0-9]{4,}/g;
+              let match: RegExpExecArray | null;
+              while ((match = pattern.exec(source))) {
+                const word = match[0];
+                if (word.length < 4) continue;
+                const range = document.createRange();
+                range.setStart(node, match.index);
+                range.setEnd(node, match.index + word.length);
+                if (range.getClientRects().length > 1) problems.push(`split ${word}`);
+              }
             }
           }
           return problems;
