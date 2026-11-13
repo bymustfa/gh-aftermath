@@ -140,7 +140,7 @@ try {
         <button class="btn btn-primary btn-sm" id="redeliver" type="button" disabled>Redeliver</button>
       </div>
       <div class="table-scroll">
-        <table>
+        <table class="deliveries">
           <thead>
             <tr>
               <th><input id="select-deliveries" type="checkbox" aria-label="Select all deliveries" /></th>
@@ -166,7 +166,7 @@ try {
         </div>
       </div>
       <div class="table-scroll">
-        <table>
+        <table class="runs">
           <thead>
             <tr>
               <th><input id="select-runs" type="checkbox" aria-label="Select all stuck runs" /></th>
