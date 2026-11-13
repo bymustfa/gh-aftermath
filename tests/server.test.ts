@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { credentialError } from "../src/core/access.js";
 import { createDemoGateway } from "../src/demo/gateway.js";
 import { createApp } from "../src/server.js";
+import type { RecoveryClient, ScanClient } from "../src/core/types.js";
 
 const clock = () => new Date("2026-11-13T12:00:00.000Z");
 
@@ -64,8 +66,8 @@ describe("demo server", () => {
     expect(body.counts).toMatchObject({
       repositories: 5,
       hooks: 5,
-      deliveriesSeen: 12,
-      failedDeliveries: 10,
+      deliveriesSeen: 11,
+      failedDeliveries: 9,
       stuckRuns: 5,
     });
     expect(body.deliveries.some((delivery: { statusCode: number }) => delivery.statusCode === 503)).toBe(true);
@@ -75,7 +77,27 @@ describe("demo server", () => {
     const names = body.runs.map((run: { name: string }) => run.name);
     expect(names).toContain("E2E");
     expect(names).not.toContain("Lint");
-    expect(body.markdown).toContain("Failed or missing deliveries: 10");
+    expect(body.markdown).toContain("Failed or missing deliveries: 9");
+    expect(body.deliveries.some((delivery: { id: number }) => delivery.id === 801)).toBe(false);
+  });
+
+  it("includes the dated ping only when the window covers it", async () => {
+    const application = app();
+    const response = await application.request("/api/scan", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        org: "northwind",
+        from: "2026-11-08T18:00",
+        to: "2026-11-08T19:00",
+        queuedMinutes: 10,
+        inProgressMinutes: 60,
+        includeApp: true,
+      }),
+    });
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.deliveries.map((delivery: { id: number }) => delivery.id)).toEqual([801]);
   });
 
   it("dry-run records the request and leaves the delivery failed", async () => {
@@ -139,5 +161,160 @@ describe("demo server", () => {
     const text = await markdown.text();
     expect(text).toContain("force-cancel");
     expect(text).toContain("POST /repos/northwind/web/actions/runs/1004/force-cancel");
+  });
+
+  it("replaces a stale window error with the error from the next submit", async () => {
+    const application = app();
+    const inverted = await application.request("/api/scan", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        org: "northwind",
+        from: "2026-11-09T18:30",
+        to: "2026-11-09T14:00",
+      }),
+    });
+    const invertedBody = await inverted.json();
+    expect(inverted.status).toBe(400);
+    expect(invertedBody.error).toMatch(/before/);
+
+    const emptyOrg = await application.request("/api/scan", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        org: "   ",
+        from: "2026-11-09T14:00",
+        to: "2026-11-09T18:30",
+      }),
+    });
+    const emptyBody = await emptyOrg.json();
+    expect(emptyOrg.status).toBe(400);
+    expect(emptyBody.error).toMatch(/organization/i);
+    expect(emptyBody.error).not.toMatch(/before/);
+  });
+
+  it("counts a dry-run as this batch and will not keep conflicting plans for one run", async () => {
+    const application = app();
+    const first = await application.request("/api/execute", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        dryRun: true,
+        operations: [
+          { type: "cancel", owner: "northwind", repo: "web", runId: 1004 },
+          { type: "rerun", owner: "northwind", repo: "billing", runId: 1002 },
+        ],
+      }),
+    });
+    const firstBody = await first.json();
+    expect(first.status).toBe(200);
+    expect(firstBody.summary.planned).toBe(2);
+
+    const conflict = await application.request("/api/execute", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        dryRun: true,
+        operations: [
+          { type: "cancel", owner: "northwind", repo: "checkout-api", runId: 1001 },
+          { type: "force-cancel", owner: "northwind", repo: "checkout-api", runId: 1001 },
+          { type: "rerun", owner: "northwind", repo: "checkout-api", runId: 1001 },
+        ],
+      }),
+    });
+    const conflictBody = await conflict.json();
+    expect(conflict.status).toBe(400);
+    expect(conflictBody.error).toMatch(/checkout-api #1001/);
+    expect(conflictBody.error).toMatch(/cancel, force-cancel, and re-run/);
+
+    const second = await application.request("/api/execute", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        dryRun: true,
+        operations: [{ type: "force-cancel", owner: "northwind", repo: "web", runId: 1004 }],
+      }),
+    });
+    const secondBody = await second.json();
+    expect(second.status).toBe(200);
+    expect(secondBody.summary.planned).toBe(1);
+    expect(secondBody.conflicts[0]).toMatch(/web #1004/);
+    expect(secondBody.conflicts[0]).toMatch(/cancel/);
+    expect(secondBody.conflicts[0]).toMatch(/force-cancel/);
+
+    const report = JSON.parse(await (await application.request("/api/report.json")).text()) as {
+      counts: { planned: number };
+      actions: { type: string }[];
+      warnings: string[];
+    };
+    expect(report.counts.planned).toBe(1);
+    expect(report.actions.map((action) => action.type)).toEqual(["force-cancel"]);
+    expect(report.warnings.some((warning) => warning.includes("web #1004"))).toBe(true);
+  });
+
+  it("returns a credential failure instead of an empty scan", async () => {
+    const demo = createDemoGateway({ org: "northwind" });
+    const gateway: ScanClient & RecoveryClient = {
+      ...demo,
+      verifyAccess: async () => {
+        throw credentialError();
+      },
+    };
+    const application = createApp({
+      demo: false,
+      org: "northwind",
+      version: "0.1.0",
+      concurrency: 2,
+      gateway,
+      clock,
+    });
+    const response = await application.request("/api/scan", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        org: "northwind",
+        from: "2026-11-09T14:00",
+        to: "2026-11-09T18:30",
+      }),
+    });
+    const body = await response.json();
+    expect(response.status).toBe(401);
+    expect(body.error).toMatch(/Bad credentials/);
+    expect(body.counts).toBeUndefined();
+    expect(body.deliveries).toBeUndefined();
+  });
+
+  it("returns a permission failure when organization webhooks are not readable", async () => {
+    const demo = createDemoGateway({ org: "northwind" });
+    const gateway: ScanClient & RecoveryClient = {
+      ...demo,
+      listOrgHooks: async () => {
+        const error = new Error("Not Found") as Error & { status: number };
+        error.status = 404;
+        throw error;
+      },
+    };
+    const application = createApp({
+      demo: false,
+      org: "northwind",
+      version: "0.1.0",
+      concurrency: 2,
+      gateway,
+      clock,
+    });
+    const response = await application.request("/api/scan", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        org: "northwind",
+        from: "2026-11-09T14:00",
+        to: "2026-11-09T18:30",
+      }),
+    });
+    const body = await response.json();
+    expect(response.status).toBe(403);
+    expect(body.error).toMatch(/admin:org_hook/);
+    expect(body.error).toMatch(/organization_hooks:write/);
+    expect(body.counts).toBeUndefined();
   });
 });

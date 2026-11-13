@@ -1,7 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
+import { AccessError } from "./core/access.js";
 import { executeOperations, parseOperations } from "./core/execute.js";
+import { applyDryRunBatch, assertCompatibleRunPlans, batchSummary } from "./core/plans.js";
 import { buildReport, reportToJson, reportToMarkdown } from "./core/report.js";
 import { scanOrganization } from "./core/scan.js";
 import { parseWindow } from "./core/time.js";
@@ -48,9 +50,10 @@ export function createApp(options: ServerOptions): Hono {
   const includeAppDefault = options.includeAppDefault ?? options.demo;
   let scan: ScanResult | null = null;
   let actions: ActionRecord[] = [];
+  let planWarnings: string[] = [];
 
   function currentReport(generatedAt?: Date) {
-    return buildReport({
+    const report = buildReport({
       version: options.version,
       demo: options.demo,
       org: scan?.org || options.org,
@@ -58,6 +61,8 @@ export function createApp(options: ServerOptions): Hono {
       actions,
       ...(generatedAt ? { generatedAt } : {}),
     });
+    if (planWarnings.length > 0) report.warnings = [...report.warnings, ...planWarnings];
+    return report;
   }
 
   app.use("*", async (c, next) => {
@@ -135,7 +140,8 @@ export function createApp(options: ServerOptions): Hono {
       return c.json({ ...scan, demo: options.demo, rateLimit, markdown: reportToMarkdown(report) });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Scan failed.";
-      return c.json({ error: message }, 400);
+      const status = error instanceof AccessError && (error.status === 401 || error.status === 403) ? error.status : 400;
+      return c.json({ error: message }, status);
     }
   });
 
@@ -146,21 +152,26 @@ export function createApp(options: ServerOptions): Hono {
       const dryRun = flag(body.dryRun, true);
       const operations = parseOperations(body.operations);
       if (operations.length === 0) throw new Error("Select at least one delivery or workflow run.");
+      assertCompatibleRunPlans(operations);
       const performed = await executeOperations(operations, options.gateway, {
         dryRun,
         concurrency: options.concurrency,
       });
-      actions = actions.concat(performed);
+      let conflicts: string[] = [];
+      if (dryRun) {
+        const merged = applyDryRunBatch(actions, performed);
+        actions = merged.actions;
+        conflicts = merged.conflicts;
+        planWarnings = conflicts;
+      } else {
+        actions = actions.concat(performed);
+      }
       const report = currentReport();
       return c.json({
         dryRun,
         actions: performed,
-        summary: {
-          planned: report.counts.planned,
-          executed: report.counts.executed,
-          succeeded: report.counts.succeeded,
-          failed: report.counts.failed,
-        },
+        summary: batchSummary(performed),
+        conflicts,
         markdown: reportToMarkdown(report),
       });
     } catch (error) {
@@ -171,6 +182,7 @@ export function createApp(options: ServerOptions): Hono {
 
   app.post("/api/report/clear", (c) => {
     actions = [];
+    planWarnings = [];
     const report = currentReport();
     return c.json({ markdown: reportToMarkdown(report) });
   });

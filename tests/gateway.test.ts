@@ -121,4 +121,60 @@ describe("GitHub gateway", () => {
     const gateway = createRequestGateway({ request });
     await expect(gateway.rateLimit()).resolves.toMatchObject({ limit: 5000, remaining: 4800 });
   });
+
+  it("stops when X-OAuth-Scopes is missing a required scope", async () => {
+    const request: GitHubRequest = async (route) => {
+      if (route !== "GET /user") throw new Error(route);
+      return { status: 200, data: { login: "octocat" }, headers: { "x-oauth-scopes": "repo, gist" } };
+    };
+    const gateway = createRequestGateway({ request });
+    await expect(gateway.verifyAccess({ org: "acme", includeApp: false })).rejects.toThrow(
+      /read:org, admin:repo_hook, admin:org_hook/,
+    );
+  });
+
+  it("accepts classic scopes, including ones implied by a parent scope", async () => {
+    const request: GitHubRequest = async () => ({
+      status: 200,
+      data: { login: "octocat" },
+      headers: { "x-oauth-scopes": "repo, admin:org, write:repo_hook, admin:org_hook" },
+    });
+    const gateway = createRequestGateway({ request });
+    await expect(gateway.verifyAccess({ org: "acme", includeApp: false })).resolves.toBeUndefined();
+  });
+
+  it("does not invent classic scopes when the token does not advertise them", async () => {
+    const request: GitHubRequest = async () => ({ status: 200, data: { login: "octocat" }, headers: {} });
+    const gateway = createRequestGateway({ request });
+    await expect(gateway.verifyAccess({ org: "acme", includeApp: false })).resolves.toBeUndefined();
+  });
+
+  it("names missing GitHub App installation permissions", async () => {
+    const request: GitHubRequest = async () => ({ status: 200, data: { login: "aftermath[bot]" }, headers: {} });
+    const appRequest: GitHubRequest = async (route) => {
+      if (route !== "GET /app/installations/{installation_id}") throw new Error(route);
+      return {
+        status: 200,
+        data: { permissions: { metadata: "read", actions: "read", repository_hooks: "read" } },
+      };
+    };
+    const gateway = createRequestGateway({
+      request,
+      appRequest,
+      credentials: { installationId: "42", installationToken: true },
+    });
+    await expect(gateway.verifyAccess({ org: "acme", includeApp: true })).rejects.toThrow(
+      /actions:write, repository_hooks:write, organization_hooks:write/,
+    );
+  });
+
+  it("stops when GET /user returns Bad credentials", async () => {
+    const request: GitHubRequest = async () => {
+      const error = new Error("Bad credentials") as Error & { status: number };
+      error.status = 401;
+      throw error;
+    };
+    const gateway = createRequestGateway({ request });
+    await expect(gateway.verifyAccess({ org: "acme", includeApp: false })).rejects.toThrow(/Bad credentials/);
+  });
 });

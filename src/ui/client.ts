@@ -17,6 +17,11 @@ export const clientSource = `
     toast.className = isError ? "toast error" : "toast";
   }
 
+  function clearStaleError() {
+    var node = $("status");
+    if (node && node.className.indexOf("error") !== -1) setStatus("");
+  }
+
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     var toggle = $("theme-toggle");
@@ -39,6 +44,7 @@ export const clientSource = `
     $("from").value = utcInput(start);
     $("to").value = utcInput(end);
     markPreset(id);
+    clearStaleError();
     drawTimeline();
   }
 
@@ -298,6 +304,7 @@ export const clientSource = `
 
   async function scan(event) {
     if (event) event.preventDefault();
+    clearStaleError();
     state.busy = true;
     updateButtons();
     $("scan-button").textContent = "Scanning…";
@@ -382,7 +389,10 @@ export const clientSource = `
       if (body.markdown) showReport(body.markdown);
       var summary = body.summary || {};
       if (dryRun) {
-        setStatus("Dry run planned " + (summary.planned || operations.length) + " request" + ((summary.planned || operations.length) === 1 ? "" : "s") + ". Nothing was sent to GitHub.");
+        var plannedCount = typeof summary.planned === "number" ? summary.planned : operations.length;
+        var plannedMessage = "Dry run planned " + plannedCount + " request" + (plannedCount === 1 ? "" : "s") + ". Nothing was sent to GitHub.";
+        if (body.conflicts && body.conflicts.length) plannedMessage += " " + body.conflicts.join(" ");
+        setStatus(plannedMessage);
       } else {
         setStatus("Sent " + (summary.succeeded || 0) + " action" + ((summary.succeeded || 0) === 1 ? "" : "s") + (summary.failed ? ", " + summary.failed + " failed" : "") + ".");
         await scan();
@@ -396,6 +406,8 @@ export const clientSource = `
   }
 
   $("controls").addEventListener("submit", scan);
+  $("controls").addEventListener("input", clearStaleError);
+  $("controls").addEventListener("change", clearStaleError);
   $("dry-run").addEventListener("change", async function () {
     if (!$("dry-run").checked) {
       var accepted = await confirmAction(
@@ -413,6 +425,7 @@ export const clientSource = `
     $("from").value = boot.incidentFrom;
     $("to").value = boot.incidentTo;
     markPreset("preset-incident");
+    clearStaleError();
     drawTimeline();
   });
   $("preset-1h").addEventListener("click", function () { applyHours(1, "preset-1h"); });

@@ -246,7 +246,7 @@ export function createDemoSnapshot(org: string, now: Date): DemoSnapshot {
     delivery({
       id: 801,
       guid: "e8018018-0180-4081-8081-801801801801",
-      deliveredAt: null,
+      deliveredAt: "2026-11-08T18:05:00.000Z",
       status: "failed",
       statusCode: 0,
       event: "ping",
