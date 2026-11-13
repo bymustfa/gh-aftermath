@@ -11,10 +11,8 @@ export const clientSource = `
     node.className = isError ? "status error" : "status";
     var toast = $("toast");
     if (!toast) return;
-    var show = Boolean(message) && (isError || /planned|Sent|Cleared/.test(message));
-    toast.hidden = !show;
-    toast.textContent = message || "";
-    toast.className = isError ? "toast error" : "toast";
+    toast.hidden = true;
+    toast.textContent = "";
   }
 
   function applyTheme(theme) {
@@ -100,6 +98,10 @@ export const clientSource = `
       if (child) node.appendChild(child);
     });
     return node;
+  }
+
+  function softWrap(value) {
+    return String(value == null ? "" : value).replace(/([/._~-])/g, "$1\u200b");
   }
 
   function whereOf(delivery) {
@@ -222,15 +224,15 @@ export const clientSource = `
         updateButtons();
       });
       var event = el("td", {}, [
-        el("span", { text: delivery.event }),
-        delivery.action ? el("span", { className: "sub", text: delivery.action }) : null
+        el("span", { text: softWrap(delivery.event) }),
+        delivery.action ? el("span", { className: "sub", text: softWrap(delivery.action) }) : null
       ]);
       var row = el("tr", { className: checked ? "selected" : "" }, [
         el("td", {}, [box]),
         el("td", { className: "mono", text: formatTime(delivery.deliveredAt) }),
         el("td", {}, [
           el("span", { text: whereOf(delivery) }),
-          delivery.targetUrl ? el("span", { className: "sub", text: delivery.targetUrl }) : null
+          delivery.targetUrl ? el("span", { className: "sub", text: softWrap(delivery.targetUrl) }) : null
         ]),
         event,
         el("td", {}, [el("span", { className: "badge", text: resultOf(delivery) })])
@@ -260,11 +262,11 @@ export const clientSource = `
       });
       var pillClass = run.reason === "in_progress" ? "badge run" : "badge wait";
       var started = run.runStartedAt || run.createdAt;
-      var link = el("a", { href: run.htmlUrl, target: "_blank", rel: "noreferrer", text: run.owner + "/" + run.repo });
+      var link = el("a", { href: run.htmlUrl, target: "_blank", rel: "noreferrer", text: softWrap(run.owner + "/" + run.repo) });
       row.appendChild(el("td", {}, [box]));
       row.appendChild(el("td", { className: "mono", text: formatTime(started) }));
-      row.appendChild(el("td", {}, [link, el("span", { className: "sub", text: run.headBranch || "" })]));
-      row.appendChild(el("td", {}, [el("span", { text: run.name }), run.displayTitle && run.displayTitle !== run.name ? el("span", { className: "sub", text: run.displayTitle }) : null]));
+      row.appendChild(el("td", {}, [link, el("span", { className: "sub", text: softWrap(run.headBranch || "") })]));
+      row.appendChild(el("td", {}, [el("span", { text: softWrap(run.name) }), run.displayTitle && run.displayTitle !== run.name ? el("span", { className: "sub", text: softWrap(run.displayTitle) }) : null]));
       row.appendChild(el("td", {}, [el("span", { className: pillClass, text: run.status })]));
       row.appendChild(el("td", { className: "mono", text: formatAge(started) }));
       body.appendChild(row);
