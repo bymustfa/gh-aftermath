@@ -83,6 +83,17 @@ const clientProgram = `
     return formatUtcStamp(iso);
   }
 
+  function whenCell(iso) {
+    var stamp = formatTime(iso);
+    var split = stamp.lastIndexOf(" ");
+    var date = split === -1 ? stamp : stamp.slice(0, split);
+    var time = split === -1 ? "" : stamp.slice(split + 1);
+    return el("td", { className: "when" }, [
+      el("span", { className: "when-date", text: date }),
+      time ? el("span", { className: "when-time", text: time }) : null
+    ]);
+  }
+
   function formatAge(iso) {
     if (!iso) return "";
     var minutes = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
@@ -351,7 +362,7 @@ const clientProgram = `
       ]);
       var row = el("tr", { className: checked ? "selected" : "" }, [
         el("td", {}, [box]),
-        el("td", { className: "mono when", text: formatTime(delivery.deliveredAt) }),
+        whenCell(delivery.deliveredAt),
         el("td", {}, [
           el("span", { text: whereOf(delivery) }),
           delivery.targetUrl ? el("span", { className: "sub", text: softWrap(delivery.targetUrl) }) : null
@@ -400,7 +411,7 @@ const clientProgram = `
       var started = run.runStartedAt || run.createdAt;
       var link = el("a", { href: run.htmlUrl, target: "_blank", rel: "noreferrer", text: softWrap(run.owner + "/" + run.repo) });
       row.appendChild(el("td", {}, [box]));
-      row.appendChild(el("td", { className: "mono when", text: formatTime(started) }));
+      row.appendChild(whenCell(started));
       row.appendChild(el("td", {}, [link, el("span", { className: "sub", text: softWrap(run.headBranch || "") })]));
       row.appendChild(el("td", {}, [el("span", { text: softWrap(run.name) }), run.displayTitle && run.displayTitle !== run.name ? el("span", { className: "sub", text: softWrap(run.displayTitle) }) : null]));
       row.appendChild(el("td", {}, [el("span", { className: pillClass, text: run.status })]));

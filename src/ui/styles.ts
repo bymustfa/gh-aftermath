@@ -300,7 +300,7 @@ svg#timeline { width: 100%; height: 78px; display: block; margin-top: 8px; }
 .lane { fill: var(--muted-foreground); font-size: 11px; font-family: var(--font-body); }
 .tick-delivery { fill: var(--primary); }
 .tick-run { fill: var(--sky); }
-.times { display: flex; justify-content: space-between; color: var(--muted-foreground); font-family: var(--font-mono); font-size: 12px; }
+.times { display: flex; justify-content: space-between; color: var(--muted-foreground); font-family: Inter, var(--font-body), sans-serif; font-size: 12px; font-variant-numeric: tabular-nums lining-nums; }
 .boards { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 16px; min-width: 0; }
 .boards > * { min-width: 0; }
 .count { color: var(--muted-foreground); font-family: var(--font-body); font-weight: 500; font-size: 16px; letter-spacing: 0; }
@@ -308,8 +308,15 @@ svg#timeline { width: 100%; height: 78px; display: block; margin-top: 8px; }
 table { width: 100%; border-collapse: collapse; }
 .deliveries { table-layout: fixed; }
 .deliveries th:nth-child(1) { width: 2.75rem; }
-.deliveries th:nth-child(2) { width: 11.5rem; }
-.table-scroll td.when { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.deliveries th:nth-child(2),
+.runs th:nth-child(2) { width: 5.75rem; }
+td.when {
+  font-family: Inter, var(--font-body), sans-serif;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1;
+}
+.when-date, .when-time { display: block; white-space: nowrap; line-height: 1.35; }
+.boards td { overflow: hidden; }
 .deliveries th:nth-child(4) { width: 18%; }
 .deliveries th:nth-child(5) { width: 5.75rem; }
 .runs { table-layout: fixed; width: 100%; }

@@ -140,6 +140,40 @@ describe("accessibility", () => {
     }
   });
 
+  it("keeps When cells from overlapping the next column", async () => {
+    const page = await openPage();
+    try {
+      await scanIncident(page);
+      const widths = [375, 768, 1280, 1400];
+      for (const width of widths) {
+        await page.setViewportSize({ width, height: 900 });
+        const overlaps = await page.evaluate(() => {
+          function box(element: Element) {
+            const rect = element.getBoundingClientRect();
+            return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+          }
+          function hits(a: ReturnType<typeof box>, b: ReturnType<typeof box>) {
+            return a.right > b.left + 1 && a.left < b.right - 1 && a.bottom > b.top + 1 && a.top < b.bottom - 1;
+          }
+          const problems: string[] = [];
+          for (const cell of document.querySelectorAll("#deliveries-body td.when, #runs-body td.when")) {
+            const next = cell.nextElementSibling;
+            if (!(next instanceof HTMLElement)) continue;
+            if (hits(box(cell), box(next))) problems.push(`overlap ${cell.textContent?.trim()} / ${next.textContent?.trim()?.slice(0, 24)}`);
+            if (cell.scrollWidth > cell.clientWidth + 1) problems.push(`clipped ${cell.textContent?.trim()}`);
+            for (const part of cell.querySelectorAll(".when-date, .when-time")) {
+              if (part.scrollWidth > part.clientWidth + 1) problems.push(`part clipped ${part.textContent?.trim()}`);
+            }
+          }
+          return problems;
+        });
+        expect(overlaps, `${width}px`).toEqual([]);
+      }
+    } finally {
+      await page.close();
+    }
+  });
+
   it("has no serious or critical WCAG 2.1 AA violations in light or dark", async () => {
     const page = await openPage();
     try {
