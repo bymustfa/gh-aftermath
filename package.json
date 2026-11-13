@@ -1,0 +1,59 @@
+{
+  "name": "gh-aftermath",
+  "version": "0.1.0",
+  "description": "Self-hosted web UI to redeliver failed GitHub webhooks and clear stuck Actions runs after an outage.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "Mustafa",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bymustfa/gh-aftermath.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bymustfa/gh-aftermath/issues"
+  },
+  "homepage": "https://github.com/bymustfa/gh-aftermath#readme",
+  "bin": {
+    "gh-aftermath": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "assets",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "demo": "tsx src/cli.ts --demo",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/cli.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "record-demo": "node scripts/record-demo.mjs"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.6",
+    "@octokit/auth-app": "^8.1.1",
+    "@octokit/plugin-retry": "^8.0.2",
+    "@octokit/plugin-throttling": "^11.0.2",
+    "hono": "^4.10.4",
+    "octokit": "^5.0.5"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^22.19.1",
+    "eslint": "^9.39.1",
+    "nock": "^14.0.10",
+    "playwright": "^1.56.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vitest": "^3.2.4"
+  }
+}

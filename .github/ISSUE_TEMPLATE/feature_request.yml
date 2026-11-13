@@ -1,0 +1,23 @@
+name: Feature request
+description: Something that would make post-incident cleanup easier
+title: "Feature: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What cleanup step is still manual?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Repositories, organization webhooks, GitHub App deliveries, or Actions runs?

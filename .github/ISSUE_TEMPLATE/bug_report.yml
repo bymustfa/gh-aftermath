@@ -1,0 +1,42 @@
+name: Bug report
+description: A scan, redelivery, or workflow action did the wrong thing
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What did gh-aftermath do, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run gh-aftermath with ...
+        2. Scan the window ...
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - Demo
+        - Live, dry-run
+        - Live, executed
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "0.1.0"
+  - type: textarea
+    id: extra
+    attributes:
+      label: Logs or report excerpt
+      description: Remove tokens, private keys, and webhook payloads before pasting.
