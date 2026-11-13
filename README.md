@@ -136,7 +136,7 @@ npm run demo
 
 GitHub API decisions live in `src/core` and `src/github`. The UI does not call Octokit directly.
 
-`release-please` is set up for a Node package. `skip-github-release` is true, and the npm publish job in `.github/workflows/release-please.yml` is commented out. Publishing also requires removing `"private": true` and an owner-approved `workflow_dispatch`. Scorecard results stay on this private repository (`publish_results: false`).
+`release-please` is set up for a Node package. `skip-github-release` is true, and the npm publish job in `.github/workflows/release-please.yml` is commented out. Publishing also requires removing `"private": true` and an owner-approved `workflow_dispatch`. Scorecard stays off the public Scorecard API (`publish_results: false`). Code scanning is not enabled on this private repository, so CodeQL and Scorecard keep their SARIF files as workflow artifacts instead of uploading them to the Security tab.
 
 ## Related
 

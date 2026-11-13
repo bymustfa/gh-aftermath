@@ -14,10 +14,9 @@ jobs:
     name: Scorecard analysis
     runs-on: ubuntu-latest
     permissions:
-      security-events: write
       id-token: write
       contents: read
-      actions: read
+      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,6 +27,10 @@ jobs:
           results_format: sarif
           # This repository is private. Do not publish results to the public Scorecard API.
           publish_results: false
-      - uses: github/codeql-action/upload-sarif@v3
+      # Code scanning is not enabled, so the SARIF stays as a workflow artifact
+      # instead of being uploaded to the Security tab.
+      - uses: actions/upload-artifact@v4
         with:
-          sarif_file: results.sarif
+          name: scorecard-sarif
+          path: results.sarif
+          if-no-files-found: error

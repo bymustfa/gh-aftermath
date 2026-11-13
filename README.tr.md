@@ -136,7 +136,7 @@ npm run demo
 
 GitHub API kararları `src/core` ve `src/github` içindedir. Arayüz Octokit'i doğrudan çağırmaz.
 
-`release-please` bir Node paketi için ayarlıdır. `skip-github-release` açıktır ve `.github/workflows/release-please.yml` içindeki npm publish işi yorum satırındadır. Yayımlamak için `"private": true` kaldırılmalı ve sahibi `workflow_dispatch` ile onaylamalıdır. Scorecard sonuçları bu özel depoda kalır (`publish_results: false`).
+`release-please` bir Node paketi için ayarlıdır. `skip-github-release` açıktır ve `.github/workflows/release-please.yml` içindeki npm publish işi yorum satırındadır. Yayımlamak için `"private": true` kaldırılmalı ve sahibi `workflow_dispatch` ile onaylamalıdır. Scorecard herkese açık Scorecard API'sine sonuç göndermez (`publish_results: false`). Bu özel depoda kod tarama açık olmadığı için CodeQL ve Scorecard, SARIF dosyalarını Security sekmesine yüklemek yerine iş akışı artifaktı olarak saklar.
 
 ## İlgili
 
