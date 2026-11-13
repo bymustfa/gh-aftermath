@@ -37,7 +37,7 @@
     "record-demo": "node scripts/record-demo.mjs"
   },
   "dependencies": {
-    "@hono/node-server": "^1.19.6",
+    "@hono/node-server": "^2.1.6",
     "@octokit/auth-app": "^8.1.1",
     "@octokit/plugin-retry": "^8.0.2",
     "@octokit/plugin-throttling": "^11.0.2",
