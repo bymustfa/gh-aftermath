@@ -30,18 +30,20 @@ gh-aftermath is the org-wide, time-windowed pass: webhooks and stuck runs togeth
 
 ## Install
 
-Node 20 or newer.
+Node 20 or newer. The package is not on npm yet. Run it from a checkout:
 
 ```bash
-npx gh-aftermath --demo
+git clone https://github.com/bymustfa/gh-aftermath.git
+cd gh-aftermath
+npm ci
+npm run build
+npm start -- --demo
 ```
 
-`npx gh-aftermath` will work once the package is published. Until then, run it from a checkout or from the container:
+Live mode is the same server without `--demo`:
 
 ```bash
-npm install
-npm run build
-npx gh-aftermath --demo
+npm start
 ```
 
 Docker:
@@ -52,13 +54,19 @@ docker run --rm -p 8787:8787 gh-aftermath --demo
 docker run --rm -p 8787:8787 -e GITHUB_TOKEN -e GITHUB_ORG=your-org gh-aftermath
 ```
 
+Coming soon, once the package is published:
+
+```bash
+npx gh-aftermath --demo
+```
+
 Open http://localhost:8787.
 
 ## Usage
 
-1. Set the organization and the UTC window. Demo mode opens on the November 9 sample incident.
+1. Set the organization and the UTC window. Start and end are plain UTC text: the characters in the field are the characters that are sent. Demo mode opens on the November 9 sample incident.
 2. Leave **Dry run** checked and scan.
-3. Select the deliveries and runs you want. Redeliver, cancel, force-cancel, or re-run. The report lists each `POST`.
+3. Narrow deliveries and stuck runs with search, repository, event, and status. Check the rows you want. Redeliver, cancel, force-cancel, and re-run use only the checked rows that are still visible in that filtered list.
 4. Turn dry-run off and run the same actions to call GitHub.
 5. Download the report as Markdown or JSON.
 
@@ -79,7 +87,7 @@ gh-aftermath --demo --port 8787 --org northwind
 | `CONCURRENCY` | Parallel GitHub calls. Default 4 |
 | `MAX_PAGES` | Pages of 100 read from each list. Default 20 |
 
-The token is read on the server. The page has no token field, and reports do not include it.
+If `GITHUB_TOKEN` is set, the server uses it and the page does not ask again. If it is missing, the server still starts and the page shows a masked token field. That value stays in server memory for the process only: it is not written to disk, not stored in the browser, and not included in the report or the logs. Demo mode does not ask for a token. Reports do not include it.
 
 ### What gets flagged
 

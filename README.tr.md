@@ -30,18 +30,20 @@ gh-aftermath kuruluş genelinde ve zaman aralığına göre çalışır: webhook
 
 ## Kurulum
 
-Node 20 veya daha yenisi.
+Node 20 veya daha yenisi. Paket henüz npm'de yok. Kaynaktan çalıştırın:
 
 ```bash
-npx gh-aftermath --demo
+git clone https://github.com/bymustfa/gh-aftermath.git
+cd gh-aftermath
+npm ci
+npm run build
+npm start -- --demo
 ```
 
-`npx gh-aftermath` paket yayımlandıktan sonra çalışır. O zamana kadar kaynaktan veya konteynerden çalıştırın:
+Canlı mod aynı sunucudur, `--demo` olmadan:
 
 ```bash
-npm install
-npm run build
-npx gh-aftermath --demo
+npm start
 ```
 
 Docker:
@@ -52,13 +54,19 @@ docker run --rm -p 8787:8787 gh-aftermath --demo
 docker run --rm -p 8787:8787 -e GITHUB_TOKEN -e GITHUB_ORG=kurulusunuz gh-aftermath
 ```
 
+Yakında, paket yayımlandıktan sonra:
+
+```bash
+npx gh-aftermath --demo
+```
+
 http://localhost:8787 adresini açın.
 
 ## Kullanım
 
-1. Kuruluşu ve UTC aralığını girin. Demo modu 9 Kasım örnek kesintisiyle açılır.
+1. Kuruluşu ve UTC aralığını girin. Başlangıç ve bitiş düz UTC metnidir: alanda gördüğünüz karakterler gönderilen karakterlerdir. Demo modu 9 Kasım örnek kesintisiyle açılır.
 2. **Dry run** işaretliyken tarayın.
-3. Teslimatları ve işleri seçin. Yeniden teslim, iptal, zorla iptal veya yeniden çalıştırın. Rapor her `POST` yolunu yazar.
+3. Teslimat ve takılı iş listelerini arama, depo, olay ve durum ile daraltın. İstediğiniz satırları işaretleyin. Yeniden teslim, iptal, zorla iptal ve yeniden çalıştırma yalnızca bu süzülmüş listede hâlâ görünen işaretli satırlara uygulanır.
 4. Dry-run'ı kapatıp aynı işlemleri GitHub'a göndermek için tekrarlayın.
 5. Raporu Markdown veya JSON olarak indirin.
 
@@ -79,7 +87,7 @@ gh-aftermath --demo --port 8787 --org northwind
 | `CONCURRENCY` | Eşzamanlı GitHub çağrısı. Varsayılan 4 |
 | `MAX_PAGES` | Her listeden okunan 100'lük sayfa sayısı. Varsayılan 20 |
 
-Belirteç yalnızca sunucuda okunur. Sayfada belirteç alanı yoktur ve raporlara yazılmaz.
+`GITHUB_TOKEN` tanımlıysa sunucu onu kullanır ve sayfa tekrar sormaz. Tanımlı değilse süreç kapanmaz; sayfada maskeli bir belirteç alanı açılır. Bu değer yalnızca süreç ayakta kaldığı sürece sunucu belleğinde durur: diske yazılmaz, tarayıcıda saklanmaz, rapora ve günlüklere girmez. Demo modu belirteç istemez. Raporlara yazılmaz.
 
 ### Neler işaretlenir
 

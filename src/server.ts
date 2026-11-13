@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
 import { executeOperations, parseOperations } from "./core/execute.js";
+import { redactSecrets } from "./core/redact.js";
 import { buildReport, reportToJson, reportToMarkdown } from "./core/report.js";
 import { scanOrganization } from "./core/scan.js";
 import { parseWindow } from "./core/time.js";
@@ -14,11 +15,14 @@ export interface ServerOptions {
   org: string;
   version: string;
   concurrency: number;
-  gateway: ScanClient & RecoveryClient;
+  gateway: (ScanClient & RecoveryClient) | null;
   queuedMinutesDefault?: number;
   inProgressMinutesDefault?: number;
   includeAppDefault?: boolean;
   clock?: () => Date;
+  /** Stores a token in memory and returns the gateway it authorizes. Not used in demo mode. */
+  acceptToken?: (token: string) => Promise<ScanClient & RecoveryClient>;
+  redact?: (message: string) => string;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -41,6 +45,22 @@ function flag(value: unknown, fallback: boolean): boolean {
   return value;
 }
 
+function readSessionToken(value: unknown): string {
+  if (typeof value !== "string") throw new Error("Enter a GitHub token.");
+  const token = value.trim();
+  if (!token) throw new Error("Enter a GitHub token.");
+  if (token.length < 8 || token.length > 512) {
+    throw new Error("That token does not look usable. Paste the token GitHub showed you.");
+  }
+  for (let index = 0; index < token.length; index += 1) {
+    const code = token.charCodeAt(index);
+    if (code <= 32 || code === 127) {
+      throw new Error("A token cannot contain spaces or line breaks.");
+    }
+  }
+  return token;
+}
+
 export function createApp(options: ServerOptions): Hono {
   const app = new Hono();
   const queuedDefault = options.queuedMinutesDefault ?? 10;
@@ -48,6 +68,27 @@ export function createApp(options: ServerOptions): Hono {
   const includeAppDefault = options.includeAppDefault ?? options.demo;
   let scan: ScanResult | null = null;
   let actions: ActionRecord[] = [];
+  let gateway = options.gateway;
+  let credentialsReady = gateway !== null;
+  const heldSecrets: string[] = [];
+
+  function needsToken(): boolean {
+    return !options.demo && !credentialsReady;
+  }
+
+  function scrub(message: string): string {
+    const passed = options.redact ? options.redact(message) : message;
+    return redactSecrets(passed, heldSecrets);
+  }
+
+  function requireGateway(): ScanClient & RecoveryClient {
+    if (!gateway) {
+      throw new Error(
+        "Enter a GitHub token on this page before scanning. It stays in server memory for this process and is not written to disk.",
+      );
+    }
+    return gateway;
+  }
 
   function currentReport(generatedAt?: Date) {
     return buildReport({
@@ -91,23 +132,55 @@ export function createApp(options: ServerOptions): Hono {
       queuedMinutes: queuedDefault,
       inProgressMinutes: progressDefault,
       includeApp: includeAppDefault,
+      needsToken: needsToken(),
     };
     return c.html(renderPage(boot));
   });
 
   app.get("/api/meta", async (c) => {
-    const rateLimit = await options.gateway.rateLimit().catch(() => null);
+    const rateLimit = gateway ? await gateway.rateLimit().catch(() => null) : null;
     return c.json({
       demo: options.demo,
       org: options.org,
       version: options.version,
       dryRunDefault: true,
+      needsToken: needsToken(),
       rateLimit,
     });
   });
 
+  app.post("/api/token", async (c) => {
+    try {
+      if (options.demo) throw new Error("Demo mode does not use a GitHub token.");
+      if (credentialsReady) throw new Error("A GitHub token is already configured for this process.");
+      if (!options.acceptToken) throw new Error("This server cannot store a session token.");
+      let parsed: unknown;
+      try {
+        parsed = await c.req.json();
+      } catch {
+        throw new Error("Expected a JSON object.");
+      }
+      const body = asRecord(parsed);
+      if (!body) throw new Error("Expected a JSON object.");
+      const token = readSessionToken(body.token);
+      heldSecrets.push(token);
+      try {
+        gateway = await options.acceptToken(token);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Could not use that token.";
+        throw new Error(scrub(message));
+      }
+      credentialsReady = true;
+      return c.json({ ok: true, needsToken: false });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not save the token.";
+      return c.json({ error: scrub(message) }, 400);
+    }
+  });
+
   app.post("/api/scan", async (c) => {
     try {
+      const active = requireGateway();
       const body = asRecord(await c.req.json());
       if (!body) throw new Error("Expected a JSON object.");
       const orgValue = body.org;
@@ -121,7 +194,7 @@ export function createApp(options: ServerOptions): Hono {
       const queuedMinutes = minutes(body.queuedMinutes, queuedDefault);
       const inProgressMinutes = minutes(body.inProgressMinutes, progressDefault);
       const includeApp = flag(body.includeApp, includeAppDefault);
-      scan = await scanOrganization(options.gateway, {
+      scan = await scanOrganization(active, {
         org,
         window,
         includeApp,
@@ -130,23 +203,24 @@ export function createApp(options: ServerOptions): Hono {
         inProgressThresholdMs: inProgressMinutes * 60 * 1000,
         concurrency: options.concurrency,
       });
-      const rateLimit = await options.gateway.rateLimit().catch(() => null);
+      const rateLimit = await active.rateLimit().catch(() => null);
       const report = currentReport(new Date(scan.scannedAt));
       return c.json({ ...scan, demo: options.demo, rateLimit, markdown: reportToMarkdown(report) });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Scan failed.";
-      return c.json({ error: message }, 400);
+      return c.json({ error: scrub(message) }, 400);
     }
   });
 
   app.post("/api/execute", async (c) => {
     try {
+      const active = requireGateway();
       const body = asRecord(await c.req.json());
       if (!body) throw new Error("Expected a JSON object.");
       const dryRun = flag(body.dryRun, true);
       const operations = parseOperations(body.operations);
       if (operations.length === 0) throw new Error("Select at least one delivery or workflow run.");
-      const performed = await executeOperations(operations, options.gateway, {
+      const performed = await executeOperations(operations, active, {
         dryRun,
         concurrency: options.concurrency,
       });
@@ -165,7 +239,7 @@ export function createApp(options: ServerOptions): Hono {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not run those actions.";
-      return c.json({ error: message }, 400);
+      return c.json({ error: scrub(message) }, 400);
     }
   });
 

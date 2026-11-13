@@ -1,7 +1,19 @@
-export const clientSource = `
+import { embeddedLogic } from "./embed.js";
+
+const clientProgram = `
 (function () {
+/*__LOGIC__*/
   var boot = JSON.parse(document.getElementById("boot").textContent);
-  var state = { deliveries: [], runs: [], window: null, selectedDeliveries: new Set(), selectedRuns: new Set(), busy: false };
+  var state = {
+    deliveries: [],
+    runs: [],
+    window: null,
+    selectedDeliveries: new Set(),
+    selectedRuns: new Set(),
+    busy: false,
+    scanned: false,
+    tokenReady: !boot.needsToken
+  };
 
   function $(id) { return document.getElementById(id); }
 
@@ -36,8 +48,8 @@ export const clientSource = `
   function applyHours(hours, id) {
     var end = new Date();
     var start = new Date(end.getTime() - hours * 60 * 60 * 1000);
-    $("from").value = utcInput(start);
-    $("to").value = utcInput(end);
+    $("from").value = toUtcDateTimeLocal(start);
+    $("to").value = toUtcDateTimeLocal(end);
     markPreset(id);
     drawTimeline();
   }
@@ -55,12 +67,6 @@ export const clientSource = `
       dialog.addEventListener("close", onClose);
       dialog.showModal();
     });
-  }
-
-  function pad(value) { return String(value).padStart(2, "0"); }
-
-  function utcInput(date) {
-    return date.getUTCFullYear() + "-" + pad(date.getUTCMonth() + 1) + "-" + pad(date.getUTCDate()) + "T" + pad(date.getUTCHours()) + ":" + pad(date.getUTCMinutes());
   }
 
   function parseInput(value) {
@@ -102,16 +108,101 @@ export const clientSource = `
     return node;
   }
 
-  function whereOf(delivery) {
-    if (delivery.scope === "repo") return delivery.owner + "/" + delivery.repo;
-    if (delivery.scope === "org") return delivery.org + " org hook";
-    return "GitHub App";
+  function whereOf(delivery) { return deliveryPlace(delivery); }
+  function resultOf(delivery) { return deliveryResult(delivery); }
+
+  function readDeliveryQuery() {
+    return {
+      query: $("delivery-search") ? $("delivery-search").value : "",
+      repository: $("delivery-repo") ? $("delivery-repo").value : "",
+      event: $("delivery-event") ? $("delivery-event").value : "",
+      status: $("delivery-status") ? $("delivery-status").value : ""
+    };
   }
 
-  function resultOf(delivery) {
-    if (delivery.reason === "missing_response") return "no response";
-    if (delivery.reason === "http_error") return String(delivery.statusCode);
-    return delivery.status || delivery.reason;
+  function readRunQuery() {
+    return {
+      query: $("run-search") ? $("run-search").value : "",
+      repository: $("run-repo") ? $("run-repo").value : "",
+      event: $("run-event") ? $("run-event").value : "",
+      status: $("run-status") ? $("run-status").value : ""
+    };
+  }
+
+  function visibleDeliveries() {
+    return filterDeliveries(state.deliveries, readDeliveryQuery());
+  }
+
+  function visibleRuns() {
+    return filterRuns(state.runs, readRunQuery());
+  }
+
+  function deliveryBulkIds() {
+    return idsInFilteredSelection(state.deliveries, visibleDeliveries(), state.selectedDeliveries);
+  }
+
+  function runBulkIds() {
+    return idsInFilteredSelection(state.runs, visibleRuns(), state.selectedRuns);
+  }
+
+  function pruneSelection(selected, visible) {
+    var ids = new Set(visible.map(function (item) { return item.id; }));
+    selected.forEach(function (id) {
+      if (!ids.has(id)) selected.delete(id);
+    });
+  }
+
+  function fillSelect(id, values, allLabel) {
+    var select = $(id);
+    if (!select) return;
+    var current = select.value;
+    while (select.firstChild) select.removeChild(select.firstChild);
+    select.appendChild(el("option", { value: "", text: allLabel }));
+    values.forEach(function (value) {
+      select.appendChild(el("option", { value: value, text: value }));
+    });
+    select.value = values.indexOf(current) === -1 ? "" : current;
+  }
+
+  function refreshDeliveryChoices() {
+    var choices = deliveryChoices(state.deliveries);
+    fillSelect("delivery-repo", choices.repositories, "All repositories");
+    fillSelect("delivery-event", choices.events, "All events");
+    fillSelect("delivery-status", choices.statuses, "All statuses");
+  }
+
+  function refreshRunChoices() {
+    var choices = runChoices(state.runs);
+    fillSelect("run-repo", choices.repositories, "All repositories");
+    fillSelect("run-event", choices.events, "All events");
+    fillSelect("run-status", choices.statuses, "All statuses");
+  }
+
+  function emptyRow(colspan, title, detail) {
+    var cell = el("td", { colspan: String(colspan), className: "empty" });
+    cell.appendChild(el("strong", { text: title }));
+    cell.appendChild(document.createTextNode(detail));
+    return el("tr", {}, [cell]);
+  }
+
+  function syncDeliverySelectAll(visible) {
+    var box = $("select-deliveries");
+    var selected = 0;
+    visible.forEach(function (delivery) {
+      if (state.selectedDeliveries.has(delivery.id)) selected += 1;
+    });
+    box.checked = visible.length > 0 && selected === visible.length;
+    box.indeterminate = selected > 0 && selected < visible.length;
+  }
+
+  function syncRunSelectAll(visible) {
+    var box = $("select-runs");
+    var selected = 0;
+    visible.forEach(function (run) {
+      if (state.selectedRuns.has(run.id)) selected += 1;
+    });
+    box.checked = visible.length > 0 && selected === visible.length;
+    box.indeterminate = selected > 0 && selected < visible.length;
   }
 
   function updateStamp() {
@@ -128,8 +219,10 @@ export const clientSource = `
   }
 
   function updateButtons() {
-    var deliveries = state.selectedDeliveries.size;
-    var runs = state.selectedRuns.size;
+    var deliveries = deliveryBulkIds().length;
+    var runs = runBulkIds().length;
+    var shownDeliveries = visibleDeliveries().length;
+    var shownRuns = visibleRuns().length;
     $("redeliver").textContent = deliveries ? "Redeliver " + deliveries : "Redeliver";
     $("cancel").textContent = runs ? "Cancel " + runs : "Cancel";
     $("force-cancel").textContent = runs ? "Force-cancel " + runs : "Force-cancel";
@@ -138,7 +231,23 @@ export const clientSource = `
     $("cancel").disabled = state.busy || runs === 0;
     $("force-cancel").disabled = state.busy || runs === 0;
     $("rerun").disabled = state.busy || runs === 0;
-    $("scan-button").disabled = state.busy;
+    $("scan-button").disabled = state.busy || !state.tokenReady;
+    $("redeliver").title = "Redeliver the checked rows in the filtered list. Hidden rows are not included.";
+    $("cancel").title = "Cancel the checked rows in the filtered list. Hidden rows are not included.";
+    $("force-cancel").title = "Stops the run even when the runner does not respond. Uses the checked rows in the filtered list. Hidden rows are not included.";
+    $("rerun").title = "Re-run the checked rows in the filtered list. Hidden rows are not included.";
+    var deliveryNote = $("delivery-filter-note");
+    if (deliveryNote) {
+      deliveryNote.textContent = "Redeliver uses the " + deliveries + " checked " + (deliveries === 1 ? "row" : "rows") + " in this filtered list"
+        + (state.deliveries.length ? " (" + shownDeliveries + " of " + state.deliveries.length + " shown)" : "")
+        + ". Rows hidden by the filters are not included.";
+    }
+    var runNote = $("run-filter-note");
+    if (runNote) {
+      runNote.textContent = "Cancel, force-cancel, and re-run use the " + runs + " checked " + (runs === 1 ? "row" : "rows") + " in this filtered list"
+        + (state.runs.length ? " (" + shownRuns + " of " + state.runs.length + " shown)" : "")
+        + ". Rows hidden by the filters are not included.";
+    }
   }
 
   function drawTimeline() {
@@ -206,12 +315,24 @@ export const clientSource = `
   function renderDeliveries() {
     var body = $("deliveries-body");
     body.textContent = "";
-    $("delivery-count").textContent = state.deliveries.length ? String(state.deliveries.length) : "";
-    if (!state.deliveries.length) {
-      body.appendChild(el("tr", {}, [el("td", { colspan: "5", className: "empty", text: "No failed or missing deliveries in this window." })]));
+    var visible = visibleDeliveries();
+    var total = state.deliveries.length;
+    $("delivery-count").textContent = total ? (visible.length === total ? String(total) : visible.length + " of " + total) : "";
+    if (!state.scanned) {
+      body.appendChild(emptyRow(5, "No scan yet", "Choose a window and scan to list deliveries that failed."));
+      syncDeliverySelectAll(visible);
       return;
     }
-    state.deliveries.forEach(function (delivery) {
+    if (!visible.length) {
+      body.appendChild(emptyRow(
+        5,
+        total ? "No matches" : "Nothing in this window",
+        total ? "No deliveries match these filters." : "No failed or missing deliveries in this window."
+      ));
+      syncDeliverySelectAll(visible);
+      return;
+    }
+    visible.forEach(function (delivery) {
       var checked = state.selectedDeliveries.has(delivery.id);
       var box = el("input", { type: "checkbox", "aria-label": "Select delivery " + delivery.id });
       box.checked = checked;
@@ -220,6 +341,7 @@ export const clientSource = `
         else state.selectedDeliveries.delete(delivery.id);
         row.classList.toggle("selected", box.checked);
         updateButtons();
+        syncDeliverySelectAll(visibleDeliveries());
       });
       var event = el("td", {}, [
         el("span", { text: delivery.event }),
@@ -237,17 +359,30 @@ export const clientSource = `
       ]);
       body.appendChild(row);
     });
+    syncDeliverySelectAll(visible);
   }
 
   function renderRuns() {
     var body = $("runs-body");
     body.textContent = "";
-    $("run-count").textContent = state.runs.length ? String(state.runs.length) : "";
-    if (!state.runs.length) {
-      body.appendChild(el("tr", {}, [el("td", { colspan: "6", className: "empty", text: "No stuck workflow runs in this window." })]));
+    var visible = visibleRuns();
+    var total = state.runs.length;
+    $("run-count").textContent = total ? (visible.length === total ? String(total) : visible.length + " of " + total) : "";
+    if (!state.scanned) {
+      body.appendChild(emptyRow(6, "No scan yet", "Queued runs, and in-progress runs that have gone on too long, show up here."));
+      syncRunSelectAll(visible);
       return;
     }
-    state.runs.forEach(function (run) {
+    if (!visible.length) {
+      body.appendChild(emptyRow(
+        6,
+        total ? "No matches" : "Nothing in this window",
+        total ? "No stuck runs match these filters." : "No stuck workflow runs in this window."
+      ));
+      syncRunSelectAll(visible);
+      return;
+    }
+    visible.forEach(function (run) {
       var checked = state.selectedRuns.has(run.id);
       var box = el("input", { type: "checkbox", "aria-label": "Select run " + run.id });
       box.checked = checked;
@@ -257,6 +392,7 @@ export const clientSource = `
         else state.selectedRuns.delete(run.id);
         row.classList.toggle("selected", box.checked);
         updateButtons();
+        syncRunSelectAll(visibleRuns());
       });
       var pillClass = run.reason === "in_progress" ? "badge run" : "badge wait";
       var started = run.runStartedAt || run.createdAt;
@@ -269,6 +405,7 @@ export const clientSource = `
       row.appendChild(el("td", { className: "mono", text: formatAge(started) }));
       body.appendChild(row);
     });
+    syncRunSelectAll(visible);
   }
 
   function showReport(markdown) {
@@ -276,6 +413,7 @@ export const clientSource = `
   }
 
   function applyScan(body) {
+    state.scanned = true;
     state.deliveries = body.deliveries || [];
     state.runs = body.runs || [];
     state.window = body.window;
@@ -283,6 +421,10 @@ export const clientSource = `
     var runIds = new Set(state.runs.map(function (run) { return run.id; }));
     state.selectedDeliveries.forEach(function (id) { if (!ids.has(id)) state.selectedDeliveries.delete(id); });
     state.selectedRuns.forEach(function (id) { if (!runIds.has(id)) state.selectedRuns.delete(id); });
+    refreshDeliveryChoices();
+    refreshRunChoices();
+    pruneSelection(state.selectedDeliveries, visibleDeliveries());
+    pruneSelection(state.selectedRuns, visibleRuns());
     renderDeliveries();
     renderRuns();
     renderWarnings(body.warnings);
@@ -298,6 +440,10 @@ export const clientSource = `
 
   async function scan(event) {
     if (event) event.preventDefault();
+    if (!state.tokenReady) {
+      setStatus("Enter a GitHub token above. It stays in server memory for this process and is not written to disk.", true);
+      return;
+    }
     state.busy = true;
     updateButtons();
     $("scan-button").textContent = "Scanning…";
@@ -329,8 +475,9 @@ export const clientSource = `
 
   function operationsFor(type) {
     if (type === "redeliver") {
+      var chosen = new Set(deliveryBulkIds());
       return state.deliveries.filter(function (delivery) {
-        return state.selectedDeliveries.has(delivery.id);
+        return chosen.has(delivery.id);
       }).map(function (delivery) {
         return {
           type: "redeliver",
@@ -343,8 +490,9 @@ export const clientSource = `
         };
       });
     }
+    var chosenRuns = new Set(runBulkIds());
     return state.runs.filter(function (run) {
-      return state.selectedRuns.has(run.id);
+      return chosenRuns.has(run.id);
     }).map(function (run) {
       return { type: type, owner: run.owner, repo: run.repo, runId: run.id };
     });
@@ -353,17 +501,18 @@ export const clientSource = `
   async function act(type) {
     var operations = operationsFor(type);
     if (!operations.length) {
-      setStatus(type === "redeliver" ? "Select at least one delivery." : "Select at least one workflow run.", true);
+      setStatus(type === "redeliver" ? "Select at least one delivery in the filtered list." : "Select at least one workflow run in the filtered list.", true);
       return;
     }
     var dryRun = $("dry-run").checked;
     if (!dryRun) {
       var verb = type === "redeliver" ? "Redeliver" : type === "cancel" ? "Cancel" : type === "force-cancel" ? "Force-cancel" : "Re-run";
+      var noun = operations.length === 1 ? "checked row" : "checked rows";
       var accepted = await confirmAction(
-        verb + " " + operations.length + (operations.length === 1 ? " item?" : " items?"),
+        verb + " " + operations.length + " " + noun + " in the filtered list?",
         type === "force-cancel"
-          ? "This calls GitHub now. Force-cancel stops a run even when the runner does not respond."
-          : "This calls GitHub now. The report will record what was sent.",
+          ? "This calls GitHub now and only includes checked rows that are still visible. Force-cancel stops a run even when the runner does not respond."
+          : "This calls GitHub now and only includes checked rows that are still visible. The report will record what was sent.",
         verb
       );
       if (!accepted) return;
@@ -395,6 +544,18 @@ export const clientSource = `
     }
   }
 
+  function onDeliveryFilter() {
+    pruneSelection(state.selectedDeliveries, visibleDeliveries());
+    renderDeliveries();
+    updateButtons();
+  }
+
+  function onRunFilter() {
+    pruneSelection(state.selectedRuns, visibleRuns());
+    renderRuns();
+    updateButtons();
+  }
+
   $("controls").addEventListener("submit", scan);
   $("dry-run").addEventListener("change", async function () {
     if (!$("dry-run").checked) {
@@ -423,13 +584,33 @@ export const clientSource = `
     try { localStorage.setItem("gh-aftermath-theme", next); } catch (error) {}
     applyTheme(next);
   });
+  ["delivery-search", "delivery-repo", "delivery-event", "delivery-status"].forEach(function (id) {
+    var node = $(id);
+    if (!node) return;
+    node.addEventListener("input", onDeliveryFilter);
+    node.addEventListener("change", onDeliveryFilter);
+  });
+  ["run-search", "run-repo", "run-event", "run-status"].forEach(function (id) {
+    var node = $(id);
+    if (!node) return;
+    node.addEventListener("input", onRunFilter);
+    node.addEventListener("change", onRunFilter);
+  });
   $("select-deliveries").addEventListener("change", function () {
-    state.selectedDeliveries = new Set($("select-deliveries").checked ? state.deliveries.map(function (delivery) { return delivery.id; }) : []);
+    var visible = visibleDeliveries();
+    visible.forEach(function (delivery) {
+      if ($("select-deliveries").checked) state.selectedDeliveries.add(delivery.id);
+      else state.selectedDeliveries.delete(delivery.id);
+    });
     renderDeliveries();
     updateButtons();
   });
   $("select-runs").addEventListener("change", function () {
-    state.selectedRuns = new Set($("select-runs").checked ? state.runs.map(function (run) { return run.id; }) : []);
+    var visible = visibleRuns();
+    visible.forEach(function (run) {
+      if ($("select-runs").checked) state.selectedRuns.add(run.id);
+      else state.selectedRuns.delete(run.id);
+    });
     renderRuns();
     updateButtons();
   });
@@ -443,6 +624,33 @@ export const clientSource = `
     showReport(body.markdown || "");
     setStatus("Cleared the action log.");
   });
+  var tokenForm = $("token-form");
+  if (tokenForm) {
+    tokenForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      var input = $("token");
+      var status = $("token-status");
+      status.className = "status";
+      status.textContent = "Saving the token in server memory…";
+      try {
+        var response = await fetch("/api/token", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ token: input.value })
+        });
+        var body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Could not save the token.");
+        input.value = "";
+        state.tokenReady = true;
+        tokenForm.hidden = true;
+        setStatus("Token saved in server memory for this process. It was not written to disk.");
+        updateButtons();
+      } catch (error) {
+        status.textContent = error instanceof Error ? error.message : "Could not save the token.";
+        status.className = "status error";
+      }
+    });
+  }
 
   applyTheme(document.documentElement.getAttribute("data-theme") || "light");
   updateStamp();
@@ -455,3 +663,5 @@ export const clientSource = `
   }).catch(function () {});
 })();
 `;
+
+export const clientSource = clientProgram.replace("/*__LOGIC__*/", embeddedLogic);
