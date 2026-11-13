@@ -1,0 +1,50 @@
+name: release-please
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Open a release PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4.4.1
+        id: release
+        with:
+          config-file: .github/release-please-config.json
+          manifest-file: .github/.release-please-manifest.json
+
+  # npm publish is disabled. Nothing in this workflow publishes a package or
+  # creates a GitHub Release (see skip-github-release in the config).
+  #
+  # To publish later, the owner has to do all of the following on purpose:
+  # 1. Remove "private": true from package.json.
+  # 2. Set skip-github-release to false, or tag the release themselves.
+  # 3. Uncomment the job below.
+  # 4. Create a GitHub Environment named npm-publish with required reviewers.
+  # 5. Add an NPM_TOKEN secret.
+  # 6. Run this workflow with workflow_dispatch and approve the environment.
+  #
+  # publish:
+  #   if: ${{ github.event_name == 'workflow_dispatch' }}
+  #   needs: release-please
+  #   runs-on: ubuntu-latest
+  #   environment: npm-publish
+  #   permissions:
+  #     contents: read
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 22
+  #         registry-url: https://registry.npmjs.org
+  #     - run: npm ci
+  #     - run: npm publish --access public
+  #       env:
+  #         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

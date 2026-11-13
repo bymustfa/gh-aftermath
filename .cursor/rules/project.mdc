@@ -1,0 +1,10 @@
+---
+description: gh-aftermath project rules
+alwaysApply: true
+---
+
+Do not add a Claude signature, Co-Authored-By line, or "Generated with Claude Code" to commit messages or PR descriptions.
+
+Do not add any AI-tool signature, Co-Authored-By trailer, or "Generated with" line to commit messages or pull request descriptions.
+
+gh-aftermath is a self-hosted recovery UI. Keep GitHub API logic in `src/core` and `src/github`, separate from the UI. Dry-run is the default. Never publish to npm, create a GitHub Release, or make the repository public unless the owner explicitly asks.
