@@ -316,7 +316,8 @@ td.when {
   font-feature-settings: "tnum" 1;
 }
 .when-date, .when-time { display: block; white-space: nowrap; line-height: 1.35; }
-.boards td { overflow: hidden; }
+.place { display: block; max-width: 100%; overflow-wrap: break-word; }
+.runs th:nth-child(3) { width: 7.5rem; }
 .deliveries th:nth-child(4) { width: 18%; }
 .deliveries th:nth-child(5) { width: 5.75rem; }
 .runs { table-layout: fixed; width: 100%; }

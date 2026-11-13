@@ -121,6 +121,37 @@ const clientProgram = `
     return String(value == null ? "" : value).replace(/([/._~-])/g, "$1\u200b");
   }
 
+  function slashBreak(value) {
+    var text = String(value == null ? "" : value);
+    var node = document.createElement("span");
+    node.className = "place";
+    node.title = text;
+    var slash = text.indexOf("/");
+    if (slash === -1) {
+      node.textContent = text;
+      return node;
+    }
+    node.appendChild(document.createTextNode(text.slice(0, slash)));
+    node.appendChild(document.createElement("wbr"));
+    node.appendChild(document.createTextNode(text.slice(slash)));
+    return node;
+  }
+
+  function repoLink(run) {
+    var label = run.owner + "/" + run.repo;
+    var link = el("a", {
+      href: run.htmlUrl,
+      target: "_blank",
+      rel: "noreferrer",
+      title: label,
+      className: "place"
+    });
+    link.appendChild(document.createTextNode(run.owner));
+    link.appendChild(document.createElement("wbr"));
+    link.appendChild(document.createTextNode("/" + run.repo));
+    return link;
+  }
+
   function whereOf(delivery) { return deliveryPlace(delivery); }
   function resultOf(delivery) { return deliveryResult(delivery); }
 
@@ -363,9 +394,9 @@ const clientProgram = `
       var row = el("tr", { className: checked ? "selected" : "" }, [
         el("td", {}, [box]),
         whenCell(delivery.deliveredAt),
-        el("td", {}, [
-          el("span", { text: whereOf(delivery) }),
-          delivery.targetUrl ? el("span", { className: "sub", text: softWrap(delivery.targetUrl) }) : null
+        el("td", { className: "repo" }, [
+          slashBreak(whereOf(delivery)),
+          delivery.targetUrl ? el("span", { className: "sub", title: delivery.targetUrl, text: softWrap(delivery.targetUrl) }) : null
         ]),
         event,
         el("td", {}, [el("span", { className: "badge", text: resultOf(delivery) })])
@@ -409,11 +440,11 @@ const clientProgram = `
       });
       var pillClass = run.reason === "in_progress" ? "badge run" : "badge wait";
       var started = run.runStartedAt || run.createdAt;
-      var link = el("a", { href: run.htmlUrl, target: "_blank", rel: "noreferrer", text: softWrap(run.owner + "/" + run.repo) });
+      var link = repoLink(run);
       row.appendChild(el("td", {}, [box]));
       row.appendChild(whenCell(started));
-      row.appendChild(el("td", {}, [link, el("span", { className: "sub", text: softWrap(run.headBranch || "") })]));
-      row.appendChild(el("td", {}, [el("span", { text: softWrap(run.name) }), run.displayTitle && run.displayTitle !== run.name ? el("span", { className: "sub", text: softWrap(run.displayTitle) }) : null]));
+      row.appendChild(el("td", { className: "repo" }, [link, el("span", { className: "sub", title: run.headBranch || "", text: softWrap(run.headBranch || "") })]));
+      row.appendChild(el("td", { className: "workflow" }, [el("span", { className: "place", title: run.name, text: softWrap(run.name) }), run.displayTitle && run.displayTitle !== run.name ? el("span", { className: "sub", title: run.displayTitle, text: softWrap(run.displayTitle) }) : null]));
       row.appendChild(el("td", {}, [el("span", { className: pillClass, text: run.status })]));
       row.appendChild(el("td", { className: "mono", text: formatAge(started) }));
       body.appendChild(row);

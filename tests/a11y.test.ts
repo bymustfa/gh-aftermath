@@ -156,13 +156,17 @@ describe("accessibility", () => {
             return a.right > b.left + 1 && a.left < b.right - 1 && a.bottom > b.top + 1 && a.top < b.bottom - 1;
           }
           const problems: string[] = [];
-          for (const cell of document.querySelectorAll("#deliveries-body td.when, #runs-body td.when")) {
+          const cells = document.querySelectorAll(
+            "#deliveries-body td.when, #deliveries-body td.repo, #runs-body td.when, #runs-body td.repo, #runs-body td.workflow",
+          );
+          for (const cell of cells) {
             const next = cell.nextElementSibling;
-            if (!(next instanceof HTMLElement)) continue;
-            if (hits(box(cell), box(next))) problems.push(`overlap ${cell.textContent?.trim()} / ${next.textContent?.trim()?.slice(0, 24)}`);
-            if (cell.scrollWidth > cell.clientWidth + 1) problems.push(`clipped ${cell.textContent?.trim()}`);
-            for (const part of cell.querySelectorAll(".when-date, .when-time")) {
-              if (part.scrollWidth > part.clientWidth + 1) problems.push(`part clipped ${part.textContent?.trim()}`);
+            if (next instanceof HTMLElement && hits(box(cell), box(next))) {
+              problems.push(`overlap ${cell.textContent?.trim()} / ${next.textContent?.trim()?.slice(0, 40)}`);
+            }
+            if (cell.scrollWidth > cell.clientWidth + 1) problems.push(`clipped ${cell.textContent?.trim()?.slice(0, 40)}`);
+            for (const part of cell.querySelectorAll(".when-date, .when-time, .place, a.place")) {
+              if (part.scrollWidth > part.clientWidth + 1) problems.push(`part clipped ${part.textContent?.trim()?.slice(0, 40)}`);
             }
           }
           return problems;
