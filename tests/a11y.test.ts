@@ -191,6 +191,28 @@ describe("accessibility", () => {
         });
         expect(overlaps, `${width}px`).toEqual([]);
       }
+      for (const width of [1280, 1400]) {
+        await page.setViewportSize({ width, height: 900 });
+        const hidden = await page.evaluate(() => {
+          const problems: string[] = [];
+          for (const table of document.querySelectorAll("table.deliveries, table.runs")) {
+            const scroll = table.closest(".table-scroll");
+            if (!(scroll instanceof HTMLElement)) continue;
+            if (scroll.scrollWidth > scroll.clientWidth + 2) problems.push(`${table.className} scrolls`);
+            const view = scroll.getBoundingClientRect();
+            const headers = table.querySelectorAll("thead th");
+            if (headers.length < 5) problems.push(`${table.className} missing headers`);
+            headers.forEach((th, index) => {
+              const rect = th.getBoundingClientRect();
+              const label = th.textContent?.trim() || (index === 0 ? "checkbox" : `column ${index + 1}`);
+              if (rect.width < 16) problems.push(`${table.className} ${label} has no width`);
+              if (rect.left < view.left - 1 || rect.right > view.right + 1) problems.push(`${table.className} ${label} is outside the card`);
+            });
+          }
+          return problems;
+        });
+        expect(hidden, `${width}px columns`).toEqual([]);
+      }
     } finally {
       await page.close();
     }

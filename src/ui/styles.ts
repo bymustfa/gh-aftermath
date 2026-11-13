@@ -301,25 +301,35 @@ svg#timeline { width: 100%; height: 78px; display: block; margin-top: 8px; }
 .tick-delivery { fill: var(--primary); }
 .tick-run { fill: var(--sky); }
 .times { display: flex; justify-content: space-between; color: var(--muted-foreground); font-family: Inter, var(--font-body), sans-serif; font-size: 12px; font-variant-numeric: tabular-nums lining-nums; }
-.boards { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 16px; min-width: 0; }
+.boards { display: grid; grid-template-columns: 1fr; gap: 16px; min-width: 0; }
 .boards > * { min-width: 0; }
 .count { color: var(--muted-foreground); font-family: var(--font-body); font-weight: 500; font-size: 16px; letter-spacing: 0; }
 .table-scroll { position: relative; max-height: 360px; max-width: 100%; min-width: 0; overflow: auto; margin-top: 12px; }
 table { width: 100%; border-collapse: collapse; }
 .deliveries, .runs { table-layout: fixed; width: 100%; }
-.deliveries { min-width: 36rem; }
-.runs { min-width: 40rem; }
-.deliveries th:nth-child(1) { width: 2.75rem; }
-.deliveries th:nth-child(2) { width: 6.5rem; }
-.deliveries th:nth-child(3) { width: 34%; }
-.deliveries th:nth-child(4) { width: 22%; }
-.deliveries th:nth-child(5) { width: 6.5rem; }
+.deliveries th:nth-child(1),
 .runs th:nth-child(1) { width: 2.5rem; }
-.runs th:nth-child(2) { width: 6.5rem; }
-.runs th:nth-child(3) { width: 10rem; }
-.runs th:nth-child(4) { width: 10rem; }
-.runs th:nth-child(5) { width: 6.5rem; }
-.runs th:nth-child(6) { width: 3.5rem; }
+.deliveries th:nth-child(2),
+.runs th:nth-child(2) { width: 8rem; }
+.deliveries th:nth-child(3) { width: 34%; }
+.runs th:nth-child(3),
+.runs th:nth-child(4) { width: 24%; }
+.deliveries th:nth-child(4) { width: 22%; }
+.deliveries th:nth-child(5),
+.runs th:nth-child(5) { width: 7rem; }
+.runs th:nth-child(6) { width: 4.5rem; }
+.deliveries thead th:first-child,
+.deliveries tbody td:first-child,
+.runs thead th:first-child,
+.runs tbody td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--card);
+}
+.deliveries thead th:first-child,
+.runs thead th:first-child { z-index: 2; }
+tr.selected td:first-child { background: var(--secondary); }
 td.when {
   font-family: Inter, var(--font-body), sans-serif;
   font-variant-numeric: tabular-nums lining-nums;
@@ -457,8 +467,10 @@ p.note {
     border: 1px solid var(--border);
     border-radius: 16px;
   }
-  .deliveries td, .runs td {
+  .deliveries td, .runs td,
+  .deliveries th, .runs th {
     display: block;
+    position: static;
     width: auto;
     padding: 3px 0;
     border: 0;
