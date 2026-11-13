@@ -14,11 +14,13 @@ Dry-run is on by default. The screen shows the exact `POST` that would be sent, 
 
 The npm badge is a placeholder. Version 0.1.0 is not published, `package.json` is marked private, and the release workflow does not publish to npm or create GitHub Releases.
 
-![Scan of the sample November 9 incident, with failed deliveries and stuck runs](docs/screenshot.png)
+![Redesigned scan: presets, failed deliveries, and stuck runs](docs/after-results-light.png)
 
-![Dry-run report listing the redeliver and cancel requests](docs/screenshot-report.png)
+![Dry-run report listing the redeliver request](docs/after-report-light.png)
 
-![Demo: pick a window, dry-run, redeliver and force-cancel, then read the report](docs/demo.gif)
+![Demo: pick a window, dry-run, confirm a live redeliver and force-cancel, then read the report](docs/demo.gif)
+
+The previous interface is in `docs/before-window.png`, `docs/before-results.png`, and `docs/before-report.png`. Dark-theme stills are `docs/after-window-dark.png`, `docs/after-results-dark.png`, and `docs/after-report-dark.png`.
 
 ## Why this exists
 

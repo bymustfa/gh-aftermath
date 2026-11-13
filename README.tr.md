@@ -14,11 +14,13 @@ Deneme çalıştırma (dry-run) varsayılan olarak açıktır. Ekranda GitHub'a 
 
 npm rozeti yer tutucudur. 0.1.0 yayımlanmadı, `package.json` private işaretli, ve yayın akışı npm'e paket basmaz, GitHub Release de oluşturmaz.
 
-![Örnek 9 Kasım kesintisinin taraması: başarısız teslimatlar ve takılı işler](docs/screenshot.png)
+![Yenilenen tarama: hazır aralıklar, başarısız teslimatlar ve takılı işler](docs/after-results-light.png)
 
-![Dry-run raporu: yeniden teslim ve iptal istekleri](docs/screenshot-report.png)
+![Dry-run raporu: yeniden teslim isteği](docs/after-report-light.png)
 
-![Demo: aralık seçimi, dry-run, yeniden teslim ve zorla iptal, sonra rapor](docs/demo.gif)
+![Demo: aralık seçimi, dry-run, canlı yeniden teslim ve zorla iptal onayı, sonra rapor](docs/demo.gif)
+
+Önceki arayüz `docs/before-window.png`, `docs/before-results.png` ve `docs/before-report.png` dosyalarında. Koyu tema kareleri `docs/after-window-dark.png`, `docs/after-results-dark.png` ve `docs/after-report-dark.png`.
 
 ## Neden
 

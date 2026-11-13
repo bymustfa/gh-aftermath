@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
 import { executeOperations, parseOperations } from "./core/execute.js";
 import { buildReport, reportToJson, reportToMarkdown } from "./core/report.js";
@@ -63,7 +65,20 @@ export function createApp(options: ServerOptions): Hono {
     c.header("X-Content-Type-Options", "nosniff");
     c.header("Referrer-Policy", "no-referrer");
     c.header("X-Frame-Options", "DENY");
-    c.header("Cache-Control", "no-store");
+    if (!c.req.path.startsWith("/fonts/")) {
+      c.header("Cache-Control", "no-store");
+    }
+  });
+
+  app.get("/fonts/:name", (c) => {
+    const name = c.req.param("name");
+    if (!/^[a-z0-9-]+\.woff2$/.test(name)) return c.notFound();
+    const path = fileURLToPath(new URL(`../assets/fonts/${name}`, import.meta.url));
+    if (!existsSync(path)) return c.notFound();
+    return c.body(readFileSync(path), 200, {
+      "Content-Type": "font/woff2",
+      "Cache-Control": "public, max-age=31536000, immutable",
+    });
   });
 
   app.get("/health", (c) => c.json({ ok: true, version: options.version, demo: options.demo }));

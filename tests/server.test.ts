@@ -46,9 +46,16 @@ describe("demo server", () => {
     expect(response.status).toBe(200);
     expect(html).toContain("Demo mode");
     expect(html).toContain("Dry run");
+    expect(html).toContain("Last 1 hour");
+    expect(html).toContain("data-theme");
     expect(html).toContain("&lt;img src=x onerror=alert(1)&gt;");
     expect(html).not.toContain("github_pat_");
     expect(html).not.toContain("ghp_");
+    const font = await hostile.request("/fonts/inter-400.woff2");
+    expect(font.status).toBe(200);
+    expect(font.headers.get("content-type")).toContain("font/woff2");
+    const escaped = await hostile.request("/fonts/..%2Fpackage.json");
+    expect(escaped.status).toBe(404);
   });
 
   it("lists the sample incident's failed deliveries and stuck runs", async () => {

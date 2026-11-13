@@ -8,7 +8,53 @@ export const clientSource = `
   function setStatus(message, isError) {
     var node = $("status");
     node.textContent = message || "";
-    node.className = isError ? "error" : "";
+    node.className = isError ? "status error" : "status";
+    var toast = $("toast");
+    if (!toast) return;
+    var show = Boolean(message) && (isError || /planned|Sent|Cleared/.test(message));
+    toast.hidden = !show;
+    toast.textContent = message || "";
+    toast.className = isError ? "toast error" : "toast";
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    var toggle = $("theme-toggle");
+    if (!toggle) return;
+    var dark = theme === "dark";
+    toggle.setAttribute("aria-pressed", dark ? "true" : "false");
+    toggle.textContent = dark ? "Light" : "Dark";
+  }
+
+  function markPreset(id) {
+    ["preset-1h", "preset-6h", "preset-24h", "preset-incident"].forEach(function (key) {
+      var node = $(key);
+      if (node) node.setAttribute("aria-pressed", key === id ? "true" : "false");
+    });
+  }
+
+  function applyHours(hours, id) {
+    var end = new Date();
+    var start = new Date(end.getTime() - hours * 60 * 60 * 1000);
+    $("from").value = utcInput(start);
+    $("to").value = utcInput(end);
+    markPreset(id);
+    drawTimeline();
+  }
+
+  function confirmAction(title, detail, acceptLabel) {
+    return new Promise(function (resolve) {
+      var dialog = $("confirm");
+      $("confirm-title").textContent = title;
+      $("confirm-detail").textContent = detail;
+      $("confirm-accept").textContent = acceptLabel;
+      function onClose() {
+        dialog.removeEventListener("close", onClose);
+        resolve(dialog.returnValue === "ok");
+      }
+      dialog.addEventListener("close", onClose);
+      dialog.showModal();
+    });
   }
 
   function pad(value) { return String(value).padStart(2, "0"); }
@@ -71,8 +117,14 @@ export const clientSource = `
   function updateStamp() {
     var dry = $("dry-run").checked;
     var stamp = $("stamp");
-    stamp.textContent = dry ? "Dry run" : "Will call GitHub";
+    stamp.textContent = dry ? "Dry run" : "Live";
     stamp.className = dry ? "stamp" : "stamp live";
+    var hint = $("dry-hint");
+    if (hint) {
+      hint.textContent = dry
+        ? "Requests are listed in the report and are not sent."
+        : "Actions will call GitHub. You will be asked to confirm each one.";
+    }
   }
 
   function updateButtons() {
@@ -181,7 +233,7 @@ export const clientSource = `
           delivery.targetUrl ? el("span", { className: "sub", text: delivery.targetUrl }) : null
         ]),
         event,
-        el("td", {}, [el("span", { className: "pill", text: resultOf(delivery) })])
+        el("td", {}, [el("span", { className: "badge", text: resultOf(delivery) })])
       ]);
       body.appendChild(row);
     });
@@ -206,7 +258,7 @@ export const clientSource = `
         row.classList.toggle("selected", box.checked);
         updateButtons();
       });
-      var pillClass = run.reason === "in_progress" ? "pill run" : "pill wait";
+      var pillClass = run.reason === "in_progress" ? "badge run" : "badge wait";
       var started = run.runStartedAt || run.createdAt;
       var link = el("a", { href: run.htmlUrl, target: "_blank", rel: "noreferrer", text: run.owner + "/" + run.repo });
       row.appendChild(el("td", {}, [box]));
@@ -305,6 +357,17 @@ export const clientSource = `
       return;
     }
     var dryRun = $("dry-run").checked;
+    if (!dryRun) {
+      var verb = type === "redeliver" ? "Redeliver" : type === "cancel" ? "Cancel" : type === "force-cancel" ? "Force-cancel" : "Re-run";
+      var accepted = await confirmAction(
+        verb + " " + operations.length + (operations.length === 1 ? " item?" : " items?"),
+        type === "force-cancel"
+          ? "This calls GitHub now. Force-cancel stops a run even when the runner does not respond."
+          : "This calls GitHub now. The report will record what was sent.",
+        verb
+      );
+      if (!accepted) return;
+    }
     state.busy = true;
     updateButtons();
     setStatus(dryRun ? "Planning " + operations.length + " action" + (operations.length === 1 ? "" : "s") + "…" : "Sending " + operations.length + " action" + (operations.length === 1 ? "" : "s") + "…");
@@ -333,27 +396,32 @@ export const clientSource = `
   }
 
   $("controls").addEventListener("submit", scan);
-  $("dry-run").addEventListener("change", updateStamp);
-  $("from").addEventListener("change", drawTimeline);
-  $("to").addEventListener("change", drawTimeline);
+  $("dry-run").addEventListener("change", async function () {
+    if (!$("dry-run").checked) {
+      var accepted = await confirmAction(
+        "Turn dry-run off?",
+        "Redeliver, cancel, force-cancel, and re-run will call GitHub. You still confirm each batch.",
+        "Turn dry-run off"
+      );
+      if (!accepted) $("dry-run").checked = true;
+    }
+    updateStamp();
+  });
+  $("from").addEventListener("change", function () { markPreset(""); drawTimeline(); });
+  $("to").addEventListener("change", function () { markPreset(""); drawTimeline(); });
   $("preset-incident").addEventListener("click", function () {
     $("from").value = boot.incidentFrom;
     $("to").value = boot.incidentTo;
+    markPreset("preset-incident");
     drawTimeline();
   });
-  $("preset-6h").addEventListener("click", function () {
-    var end = new Date();
-    var start = new Date(end.getTime() - 6 * 60 * 60 * 1000);
-    $("from").value = utcInput(start);
-    $("to").value = utcInput(end);
-    drawTimeline();
-  });
-  $("preset-24h").addEventListener("click", function () {
-    var end = new Date();
-    var start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-    $("from").value = utcInput(start);
-    $("to").value = utcInput(end);
-    drawTimeline();
+  $("preset-1h").addEventListener("click", function () { applyHours(1, "preset-1h"); });
+  $("preset-6h").addEventListener("click", function () { applyHours(6, "preset-6h"); });
+  $("preset-24h").addEventListener("click", function () { applyHours(24, "preset-24h"); });
+  $("theme-toggle").addEventListener("click", function () {
+    var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    try { localStorage.setItem("gh-aftermath-theme", next); } catch (error) {}
+    applyTheme(next);
   });
   $("select-deliveries").addEventListener("change", function () {
     state.selectedDeliveries = new Set($("select-deliveries").checked ? state.deliveries.map(function (delivery) { return delivery.id; }) : []);
@@ -376,6 +444,7 @@ export const clientSource = `
     setStatus("Cleared the action log.");
   });
 
+  applyTheme(document.documentElement.getAttribute("data-theme") || "light");
   updateStamp();
   updateButtons();
   drawTimeline();
