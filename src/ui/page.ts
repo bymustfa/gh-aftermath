@@ -79,17 +79,6 @@ try {
       <button class="preset" id="preset-24h" type="button" aria-pressed="false">Last 24 hours</button>
       <button class="preset" id="preset-incident" type="button"${incidentPressed}>Nov 9 incident</button>
     </div>
-    <div class="grid-form">
-      <label class="field">Organization
-        <input id="org" name="org" type="text" autocomplete="organization" required value="${org}" />
-      </label>
-      <label class="field">Window start (UTC)
-        <input id="from" name="from" type="datetime-local" required step="60" value="${from}" />
-      </label>
-      <label class="field">Window end (UTC)
-        <input id="to" name="to" type="datetime-local" required step="60" value="${to}" />
-      </label>
-    </div>
     <div class="switch-row">
       <label class="switch">
         <input id="dry-run" type="checkbox" checked />
@@ -103,6 +92,20 @@ try {
         <span>Include GitHub App deliveries</span>
       </label>
     </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="scan-button" type="submit">Scan organization</button>
+    </div>
+    <div class="grid-form">
+      <label class="field">Organization
+        <input id="org" name="org" type="text" autocomplete="organization" required value="${org}" />
+      </label>
+      <label class="field">Window start (UTC)
+        <input id="from" name="from" type="datetime-local" required step="60" value="${from}" />
+      </label>
+      <label class="field">Window end (UTC)
+        <input id="to" name="to" type="datetime-local" required step="60" value="${to}" />
+      </label>
+    </div>
     <details class="advanced">
       <summary>Thresholds</summary>
       <div class="advanced-grid">
@@ -114,9 +117,6 @@ try {
         </label>
       </div>
     </details>
-    <div class="form-actions">
-      <button class="btn btn-primary" id="scan-button" type="submit">Scan organization</button>
-    </div>
     <p id="status" class="status" role="status"></p>
     <ul class="warnings" id="warnings"></ul>
   </form>
@@ -197,7 +197,7 @@ try {
         <button class="btn btn-ghost btn-sm" id="clear-report" type="button">Clear actions</button>
       </div>
     </div>
-    <pre id="report">Scan a window to build the report.</pre>
+    <pre id="report" tabindex="0" role="region" aria-label="Recovery report">Scan a window to build the report.</pre>
   </section>
 </main>
 <p class="note">gh-aftermath ${escapeHtml(boot.version)}. Tokens stay on the server. Space toggles a checkbox. Esc closes a confirmation.</p>
