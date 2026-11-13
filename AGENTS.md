@@ -11,7 +11,7 @@ Do not add any other AI-tool signature, trailer, or "Generated with" line to com
 - Core rules (window filtering, failed deliveries, stuck runs, dry-run versus execute, reports) live in `src/core` and have vitest coverage.
 - `src/github` is the Octokit adapter. It paginates, stops delivery pages once they are older than the window, and uses Octokit's retry and throttling plugins.
 - `src/demo` serves the `--demo` / `DEMO=1` incident. No token is required.
-- The UI is server-rendered by Hono. Tokens stay in the environment.
+- The UI is server-rendered by Hono. A `GITHUB_TOKEN` from the environment is used when set. If it is missing, the page accepts a token and keeps it in server memory only. Do not log it or write it to disk.
 
 ## Commands
 

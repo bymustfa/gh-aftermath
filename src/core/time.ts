@@ -40,9 +40,10 @@ export interface DeliveryPageSplit {
 }
 
 /**
- * Webhook deliveries are listed newest first. Keep rows inside the window
- * (and undated rows on this page) and stop paging once a row is older than
- * the window start.
+ * Webhook deliveries are listed newest first. Keep rows whose timestamp
+ * falls inside the window. A missing or invalid timestamp is not in the
+ * window, and it does not stop paging. Stop once a row is older than the
+ * window start.
  */
 export function splitDeliveryPage(page: readonly RawDelivery[], window: TimeWindow): DeliveryPageSplit {
   const from = Date.parse(window.from);
@@ -50,15 +51,9 @@ export function splitDeliveryPage(page: readonly RawDelivery[], window: TimeWind
   const keep: RawDelivery[] = [];
   let stop = false;
   for (const delivery of page) {
-    if (!delivery.deliveredAt) {
-      keep.push(delivery);
-      continue;
-    }
+    if (!delivery.deliveredAt) continue;
     const time = Date.parse(delivery.deliveredAt);
-    if (Number.isNaN(time)) {
-      keep.push(delivery);
-      continue;
-    }
+    if (Number.isNaN(time)) continue;
     if (time < from) {
       stop = true;
       continue;
