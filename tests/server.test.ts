@@ -53,7 +53,7 @@ describe("demo server", () => {
     expect(html).toContain("&lt;img src=x onerror=alert(1)&gt;");
     expect(html).not.toContain("github_pat_");
     expect(html).not.toContain("ghp_");
-    const font = await hostile.request("/fonts/inter-400.woff2");
+    const font = await hostile.request("/fonts/plex-sans-400.woff2");
     expect(font.status).toBe(200);
     expect(font.headers.get("content-type")).toContain("font/woff2");
     const escaped = await hostile.request("/fonts/..%2Fpackage.json");
