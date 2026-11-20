@@ -41,7 +41,7 @@
     "@octokit/auth-app": "^8.1.1",
     "@octokit/plugin-retry": "^8.0.2",
     "@octokit/plugin-throttling": "^11.0.2",
-    "hono": "^4.10.4",
+    "hono": "^4.13.19",
     "octokit": "^5.0.5"
   },
   "devDependencies": {
