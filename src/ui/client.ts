@@ -295,13 +295,12 @@ const clientProgram = `
   }
 
   function drawTimeline() {
-    var svg = $("timeline");
-    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var deliveryLane = $("lane-deliveries");
+    var runLane = $("lane-runs");
+    if (deliveryLane) deliveryLane.textContent = "";
+    if (runLane) runLane.textContent = "";
     var from = parseInput($("from").value);
     var to = parseInput($("to").value);
-    var width = 1000;
-    var height = 78;
-    svg.setAttribute("viewBox", "0 0 " + width + " " + height);
     if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) {
       $("window-start").textContent = "";
       $("window-end").textContent = "";
@@ -309,42 +308,27 @@ const clientProgram = `
     }
     $("window-start").textContent = formatTime(new Date(from).toISOString());
     $("window-end").textContent = formatTime(new Date(to).toISOString());
-    var ns = "http://www.w3.org/2000/svg";
-    function add(tag, attrs) {
-      var node = document.createElementNS(ns, tag);
-      Object.keys(attrs).forEach(function (key) { node.setAttribute(key, attrs[key]); });
-      svg.appendChild(node);
-      return node;
-    }
-    var axisStart = 92;
-    var axisEnd = width - 8;
-    add("text", { x: "0", y: "16", class: "lane" }).textContent = "Webhooks";
-    add("text", { x: "0", y: "48", class: "lane" }).textContent = "Actions";
-    add("line", { x1: String(axisStart), y1: "12", x2: String(axisEnd), y2: "12", class: "axis" });
-    add("line", { x1: String(axisStart), y1: "44", x2: String(axisEnd), y2: "44", class: "axis" });
-    function xOnAxis(iso) {
+    function ratioOf(iso) {
       var time = Date.parse(iso);
       if (!Number.isFinite(time)) return null;
       var ratio = (time - from) / (to - from);
       if (ratio < 0 || ratio > 1) return null;
-      return (axisStart + ratio * (axisEnd - axisStart)).toFixed(1);
+      return ratio;
+    }
+    function mark(lane, ratio, className, label) {
+      if (!lane || ratio === null) return;
+      var dot = document.createElement("span");
+      dot.className = "tick " + className;
+      dot.style.left = "calc(8px + (100% - 16px) * " + ratio.toFixed(4) + ")";
+      dot.title = label;
+      lane.appendChild(dot);
     }
     state.deliveries.forEach(function (delivery) {
       if (!delivery.deliveredAt) return;
-      var x = xOnAxis(delivery.deliveredAt);
-      if (!x) return;
-      var dot = add("circle", { cx: x, cy: "12", r: "4.5", class: "tick-delivery" });
-      var title = document.createElementNS(ns, "title");
-      title.textContent = whereOf(delivery) + " " + delivery.event + " " + resultOf(delivery);
-      dot.appendChild(title);
+      mark(deliveryLane, ratioOf(delivery.deliveredAt), "delivery", whereOf(delivery) + " " + delivery.event + " " + resultOf(delivery));
     });
     state.runs.forEach(function (run) {
-      var x = xOnAxis(run.runStartedAt || run.createdAt);
-      if (!x) return;
-      var dot = add("circle", { cx: x, cy: "44", r: "4.5", class: "tick-run" });
-      var title = document.createElementNS(ns, "title");
-      title.textContent = run.owner + "/" + run.repo + " " + run.name + " " + run.status;
-      dot.appendChild(title);
+      mark(runLane, ratioOf(run.runStartedAt || run.createdAt), "run", run.owner + "/" + run.repo + " " + run.name + " " + run.status);
     });
   }
 
@@ -363,7 +347,7 @@ const clientProgram = `
     var total = state.deliveries.length;
     $("delivery-count").textContent = total ? (visible.length === total ? String(total) : visible.length + " of " + total) : "";
     if (!state.scanned) {
-      body.appendChild(emptyRow(5, "No scan yet", "Choose a window and scan to list deliveries that failed."));
+      body.appendChild(emptyRow(5, "No scan yet", "Choose a window and scan to list deliveries that failed"));
       syncDeliverySelectAll(visible);
       return;
     }
@@ -371,7 +355,7 @@ const clientProgram = `
       body.appendChild(emptyRow(
         5,
         total ? "No matches" : "Nothing in this window",
-        total ? "No deliveries match these filters." : "No failed or missing deliveries in this window."
+        total ? "No deliveries match these filters" : "No failed or missing deliveries in this window"
       ));
       syncDeliverySelectAll(visible);
       return;
@@ -413,7 +397,7 @@ const clientProgram = `
     var total = state.runs.length;
     $("run-count").textContent = total ? (visible.length === total ? String(total) : visible.length + " of " + total) : "";
     if (!state.scanned) {
-      body.appendChild(emptyRow(6, "No scan yet", "Queued runs, and in-progress runs that have gone on too long, show up here."));
+      body.appendChild(emptyRow(6, "No scan yet", "Queued runs, and in-progress runs that have gone on too long, show up here"));
       syncRunSelectAll(visible);
       return;
     }
@@ -421,7 +405,7 @@ const clientProgram = `
       body.appendChild(emptyRow(
         6,
         total ? "No matches" : "Nothing in this window",
-        total ? "No stuck runs match these filters." : "No stuck workflow runs in this window."
+        total ? "No stuck runs match these filters" : "No stuck workflow runs in this window"
       ));
       syncRunSelectAll(visible);
       return;

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="unslop-steps" content="Spacing, Color and icons, Type and copy, Details" />
+<meta name="unslop-frame" content="0 0 1240" />
+<title>gh-aftermath unslop</title>
+<style>
+@font-face { font-family: "IBM Plex Sans"; src: url("fonts/plex-sans-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "IBM Plex Sans"; src: url("fonts/plex-sans-500.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("fonts/plex-mono-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("fonts/plex-mono-500.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  width: 1440px;
+  min-height: 980px;
+  background: #f7f5ff;
+  color: #13111c;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.wash {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(880px 420px at 110% -8%, #eeeaff 0%, transparent 58%),
+    radial-gradient(640px 360px at -12% -4%, #e4f5b0 0%, transparent 52%);
+  pointer-events: none;
+}
+.stack { width: 1120px; margin-left: 48px; padding-top: 16px; }
+.nav {
+  width: 1120px;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 16px;
+  padding: 8px 10px 8px 16px;
+  background: #fff;
+  border: 1px solid #e8e6f0;
+  border-radius: 22px;
+  box-shadow: 0 8px 30px -12px rgba(37, 22, 120, 0.22);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.mark { position: relative; width: 28px; height: 28px; }
+.mark i { position: absolute; inset: 0; }
+.mark-old { border-radius: 9px; background: #5b3df5; box-shadow: inset 0 0 0 6px rgba(255, 255, 255, 0.18); }
+.mark-new { opacity: 0; color: #171717; }
+.mark-new svg { display: block; width: 16px; height: 16px; margin: 6px; }
+.brand-name { font-family: "Bricolage Grotesque", Inter, ui-sans-serif, sans-serif; font-weight: 600; font-size: 18px; letter-spacing: -0.04em; }
+.nav-actions { display: flex; align-items: center; gap: 8px; }
+.meta { color: #615f72; font-size: 13px; }
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  background: #13111c;
+  color: #d9f85f;
+  font-size: 13px;
+  font-weight: 600;
+}
+.lamp { width: 8px; height: 8px; border-radius: 50%; background: #b45309; opacity: 0; }
+.banner {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #eeeaff;
+  color: #5b3df5;
+  font-weight: 500;
+}
+.page-head { margin: 0 0 22px; max-width: 680px; }
+.kicker { margin: 0 0 4px; color: #5b3df5; font-size: 13px; font-weight: 600; }
+h1 { margin: 0; font-family: "Bricolage Grotesque", Inter, ui-sans-serif, sans-serif; font-weight: 600; font-size: 52px; line-height: 1.05; letter-spacing: -0.04em; }
+.lede { margin: 10px 0 0; color: #615f72; font-size: 16px; }
+.card {
+  background: #fff;
+  border: 1px solid #e8e6f0;
+  border-radius: 24px;
+  box-shadow: 0 1px 2px rgba(19, 17, 28, 0.04), 0 12px 32px -24px rgba(37, 22, 120, 0.35);
+  padding: 20px;
+  margin: 0 0 16px;
+}
+h2 { margin: 0; font-family: "Bricolage Grotesque", Inter, ui-sans-serif, sans-serif; font-size: 22px; font-weight: 600; letter-spacing: -0.03em; }
+.hint { margin: 8px 0 0; color: #615f72; font-size: 13px; font-weight: 400; }
+.presets { display: flex; gap: 8px; margin-top: 16px; }
+.preset { height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #e8e6f0; background: #fff; font-weight: 500; }
+.preset.on { background: #13111c; color: #fff; border-color: #13111c; }
+.fields { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 14px; margin-top: 16px; }
+label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500; }
+input { height: 44px; border-radius: 17px; border: 1px solid #e8e6f0; padding: 0 14px; font: inherit; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 16px; }
+.checks { display: flex; gap: 18px; font-weight: 500; }
+.scan {
+  height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 17px;
+  background: #5b3df5;
+  color: #fff;
+  font-weight: 500;
+  font-size: 15px;
+}
+.head { display: flex; justify-content: space-between; align-items: center; }
+.legend { display: flex; gap: 14px; color: #615f72; font-size: 13px; }
+.swatch { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.swatch.d { background: #5b3df5; }
+.swatch.r { background: #0ea5e9; }
+.lane { display: grid; grid-template-columns: 92px 1fr; gap: 8px; align-items: center; margin-top: 12px; }
+.lane span { color: #615f72; font-size: 12px; }
+.plot { position: relative; height: 28px; }
+.plot::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #e8e6f0; }
+.dot { position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 5px; }
+.dot.d { background: #5b3df5; }
+.dot.r { background: #0ea5e9; }
+.times { display: flex; justify-content: space-between; margin: 8px 0 0 100px; color: #615f72; font-size: 12px; }
+
+.s1 .nav { margin-bottom: 24px; padding: 12px 0; border-radius: 22px; }
+.s1 .banner { margin-bottom: 24px; padding: 16px; }
+.s1 .page-head { margin-bottom: 32px; }
+.s1 .card { padding: 24px; margin-bottom: 32px; }
+.s1 .fields { gap: 16px; }
+.s1 .checks { gap: 24px; }
+.s1 .lane { gap: 12px; grid-template-columns: 96px 1fr; margin-top: 16px; }
+.s1 label { gap: 8px; }
+
+.s2 .wash { opacity: 0; }
+.s2 body { background: #fafafa; color: #171717; }
+.s2 .nav { background: transparent; border-color: transparent; box-shadow: 0 0 0 rgba(37, 22, 120, 0); }
+.s2 .mark-old { opacity: 0; }
+.s2 .mark-new { opacity: 1; }
+.s2 .mark { width: 16px; height: 16px; }
+.s2 .mark-new svg { margin: 0; }
+.s2 .brand { gap: 8px; }
+.s2 .meta { color: #5e5e5e; }
+.s2 .stamp { background: #f4f4f5; color: #171717; border: 1px solid rgba(23, 23, 23, 0.08); }
+.s2 .lamp { opacity: 1; }
+.s2 .banner { background: #fff; color: #171717; border: 1px solid rgba(23, 23, 23, 0.08); }
+.s2 .kicker { color: #5e5e5e; }
+.s2 .lede, .s2 .hint, .s2 .legend, .s2 .lane span, .s2 .times { color: #5e5e5e; }
+.s2 .card { border-color: rgba(23, 23, 23, 0.08); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+.s2 .scan { background: #171717; }
+.s2 .swatch.d, .s2 .dot.d { background: #b45309; }
+.s2 .swatch.r, .s2 .dot.r { background: #3e6a84; }
+.s2 .plot::before { height: 1px; background: rgba(23, 23, 23, 0.16); }
+
+.s3 body, .s3 button, .s3 input { font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; }
+.s3 .brand-name, .s3 h1, .s3 h2 { font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; font-weight: 500; letter-spacing: 0; }
+.s3 .brand-name { font-size: 16px; }
+.s3 h1 { font-size: 36px; line-height: 1.15; }
+.s3 h2 { font-size: 22px; }
+.s3 .kicker { font-weight: 400; }
+.s3 .stamp { font-weight: 500; }
+.s3 .meta, .s3 .times, .s3 .lane span { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+.s4 .nav { border-radius: 0; }
+.s4 .stamp { border-radius: 8px; }
+.s4 .banner { border-radius: 8px; }
+.s4 .card { border-radius: 16px; }
+.s4 .preset { border-radius: 8px; }
+.s4 input, .s4 .scan { border-radius: 8px; }
+.s4 .plot { height: 36px; border-radius: 8px; background: #f4f4f5; }
+.s4 .dot { width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 5px; }
+.s4 .dot.r { width: 8px; height: 8px; margin: -4px 0 0 -4px; }
+</style>
+</head>
+<body>
+<div class="wash" aria-hidden="true"></div>
+<div class="stack">
+  <header class="nav" data-gap="main" data-radius>
+    <div class="brand">
+      <span class="mark" data-slop="Color tile">
+        <i class="mark-old"></i>
+        <i class="mark-new" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="16" height="16">
+            <path d="M1 11.5h14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+            <path d="M4.5 11.5V6.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+            <circle cx="11" cy="5.5" r="1.4" fill="currentColor"></circle>
+          </svg>
+        </i>
+      </span>
+      <span class="brand-name">gh-aftermath</span>
+    </div>
+    <div class="nav-actions">
+      <span class="meta">4,812 / 5,000 requests left</span>
+      <span class="stamp" data-slop="Lime pill"><i class="lamp" data-in="2"></i>Dry run</span>
+    </div>
+  </header>
+  <p class="banner" data-gap="main">Demo mode uses sample data inside the two November 9, 2026 windows GitHub reported: webhook delays 09:23–11:40 UTC, and an Actions degradation 18:07–18:59 UTC. No GitHub token is used.</p>
+  <header class="page-head" data-gap="main">
+    <p class="kicker" data-slop="Accent label"><span class="swap" data-at="3"><span class="from">After the incident</span><span class="to">One organization, one UTC window</span></span></p>
+    <h1>Clean up the outage window</h1>
+    <p class="lede">Pick how far back to look, then replay the webhooks that failed and clear the Actions runs that are still stuck.</p>
+  </header>
+  <section class="card" data-gap="main" data-radius>
+    <h2>Window</h2>
+    <p class="hint">Presets end at the current minute. Start and end are plain UTC text: the characters you see are the characters that are sent.</p>
+    <div class="presets">
+      <button class="preset" type="button">Last 1 hour</button>
+      <button class="preset" type="button">Last 6 hours</button>
+      <button class="preset" type="button">Last 24 hours</button>
+      <button class="preset on" type="button" data-radius>Nov 9 webhooks</button>
+      <button class="preset" type="button">Nov 9 Actions</button>
+    </div>
+    <div class="fields">
+      <label>Organization<input value="northwind" /></label>
+      <label>Window start<input value="2026-11-09T09:23" /></label>
+      <label>Window end<input value="2026-11-09T11:40" /></label>
+    </div>
+    <div class="row">
+      <div class="checks"><span>Dry run</span><span>Include GitHub App deliveries</span></div>
+      <button class="scan" type="button" data-slop="Purple fill" data-radius>Scan organization</button>
+    </div>
+  </section>
+  <section class="card" data-gap="main">
+    <div class="head">
+      <h2>Across the window</h2>
+      <div class="legend"><span><i class="swatch d"></i>Failed delivery</span><span><i class="swatch r"></i>Stuck run</span></div>
+    </div>
+    <div class="lane"><span>Webhooks</span><div class="plot"><i class="dot d" style="left:8%"></i><i class="dot d" style="left:28%"></i><i class="dot d" style="left:36%"></i><i class="dot d" style="left:47%"></i><i class="dot d" style="left:55%"></i><i class="dot d" style="left:70%"></i><i class="dot d" style="left:86%"></i></div></div>
+    <div class="lane"><span>Actions</span><div class="plot"><i class="dot r" style="left:4%"></i><i class="dot r" style="left:22%"></i><i class="dot r" style="left:41%"></i><i class="dot r" style="left:63%"></i><i class="dot r" style="left:88%"></i></div></div>
+    <div class="times"><span>09 Nov 09:23Z</span><span>09 Nov 11:40Z</span></div>
+  </section>
+  <section class="card" data-gap="main">
+    <h2>Webhook deliveries <span class="count">9</span></h2>
+    <p class="hint">Redeliver uses the checked rows in this filtered list. Rows hidden by the filters are not included.</p>
+  </section>
+</div>
+</body>
+</html>

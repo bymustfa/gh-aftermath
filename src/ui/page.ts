@@ -61,7 +61,7 @@ export function renderPage(boot: PageBoot): string {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="referrer" content="no-referrer" />
 <title>gh-aftermath</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%235b3df5'/%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='2' fill='%23171717'/%3E%3Cpath d='M2.5 11h11M5 11V6.5' fill='none' stroke='%23fafafa' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='11' cy='6' r='1.2' fill='%23fafafa'/%3E%3C/svg%3E" />
 <script>
 try {
   var saved = localStorage.getItem("gh-aftermath-theme");
@@ -77,7 +77,11 @@ try {
 <div class="nav-wrap">
   <nav class="nav" aria-label="Primary">
     <a class="brand" href="/">
-      <span class="brand-mark" aria-hidden="true"></span>
+      <svg class="brand-mark" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+        <path d="M1 11.5h14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+        <path d="M4.5 11.5V6.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+        <circle cx="11" cy="5.5" r="1.4" fill="currentColor"></circle>
+      </svg>
       <span class="brand-name">gh-aftermath</span>
     </a>
     <div class="nav-actions">
@@ -90,7 +94,7 @@ try {
 <main id="main" class="page">
   ${banner}
   <header class="page-head">
-    <p class="section-kicker">After the incident</p>
+    <p class="section-kicker">One organization, one UTC window</p>
     <h1>Clean up the outage window</h1>
     <p class="lede">Pick how far back to look, then replay the webhooks that failed and clear the Actions runs that are still stuck.</p>
   </header>
@@ -166,7 +170,16 @@ try {
         <span><i class="swatch run"></i>Stuck run</span>
       </div>
     </div>
-    <svg id="timeline" role="img" aria-label="Deliveries and stuck runs across the selected window"></svg>
+    <div id="timeline" class="timeline" role="img" aria-label="Deliveries and stuck runs across the selected window">
+      <div class="lane-row">
+        <span class="lane-name">Webhooks</span>
+        <div class="lane-plot" id="lane-deliveries"></div>
+      </div>
+      <div class="lane-row">
+        <span class="lane-name">Actions</span>
+        <div class="lane-plot" id="lane-runs"></div>
+      </div>
+    </div>
     <div class="times"><span id="window-start"></span><span id="window-end"></span></div>
   </section>
 
@@ -276,7 +289,7 @@ try {
         <button class="btn btn-ghost btn-sm" id="clear-report" type="button">Clear actions</button>
       </div>
     </div>
-    <pre id="report" tabindex="0" role="region" aria-label="Recovery report">Scan a window to build the report.</pre>
+    <pre id="report" tabindex="0" role="region" aria-label="Recovery report">Scan a window to build the report</pre>
   </section>
 </main>
 <p class="note">gh-aftermath ${escapeHtml(boot.version)}. A token entered on this page stays in server memory until the process stops and is not written to disk. Space toggles a checkbox. Esc closes a confirmation.</p>
